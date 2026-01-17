@@ -1,0 +1,367 @@
+.collections {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.collections-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: #fafafa;
+  padding: 32px 48px;
+}
+
+.collections-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.collections-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #222;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.create-collection-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  background: #e60023;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(230, 0, 35, 0.2);
+}
+
+.create-collection-btn:hover {
+  background: #ad081b;
+  transform: scale(1.08);
+}
+
+.create-collection-btn:active {
+  transform: scale(0.96);
+}
+
+.plus-icon {
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tab Navigation */
+.collections-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 32px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.tab-button {
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #5f6368;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 24px;
+}
+
+.tab-button:hover {
+  color: #202124;
+}
+
+.tab-button.active {
+  color: #202124;
+  border-bottom-color: #202124;
+}
+
+/* Folders View - Pinterest Style */
+.folders-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.folder-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.folder-card:hover {
+  transform: translateY(-4px);
+}
+
+.folder-images {
+  position: relative;
+  background: #f0f0f0;
+  border-radius: 12px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2px;
+  height: 240px;
+  margin-bottom: 12px;
+}
+
+.main-image {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.main-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.folder-card:hover .main-image img {
+  transform: scale(1.04);
+}
+
+.side-images {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.side-images img {
+  width: 100%;
+  height: 50%;
+  object-fit: cover;
+  border-radius: 4px;
+  transition: transform 0.2s ease;
+}
+
+.folder-card:hover .side-images img {
+  transform: scale(1.04);
+}
+
+.folder-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+  background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%);
+  border-radius: 8px;
+}
+
+.folder-info {
+  padding: 0 4px;
+}
+
+.batch-date {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 4px 0;
+}
+
+.batch-count {
+  font-size: 0.8rem;
+  color: #5f6368;
+  margin: 0;
+}
+
+/* All Searches View */
+.all-searches-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #e5e5e5;
+}
+
+.search-item:hover {
+  background: #f5f5f5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.search-item img {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.search-info {
+  flex: 1;
+}
+
+.search-info h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-info p {
+  font-size: 0.8rem;
+  color: #5f6368;
+  margin: 0;
+}
+
+/* Empty State */
+.no-collections {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+.no-collections p {
+  font-size: 1.5rem;
+  color: #5f6368;
+  margin: 16px 0;
+  font-weight: 500;
+}
+
+.no-collections .subtitle {
+  font-size: 0.95rem;
+  color: #9aa0a6;
+  margin-bottom: 24px;
+}
+
+.create-btn-secondary {
+  padding: 12px 32px;
+  background: #e60023;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.create-btn-secondary:hover {
+  background: #ad081b;
+  transform: translateY(-2px);
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #5f6368;
+  font-size: 1rem;
+}
+
+.error-message {
+  background: #fce8e6;
+  color: #d93025;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  border-left: 4px solid #d93025;
+}
+
+@media (max-width: 1024px) {
+  .collections-main {
+    padding: 24px 32px;
+  }
+
+  .collections-title {
+    font-size: 1.8rem;
+  }
+
+  .folders-view {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .folder-images {
+    height: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .collections-main {
+    padding: 16px 20px;
+  }
+
+  .collections-title {
+    font-size: 1.5rem;
+  }
+
+  .folders-view {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .folder-images {
+    height: 160px;
+  }
+
+  .create-collection-btn {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+
+  .collections-tabs {
+    margin-bottom: 20px;
+  }
+
+  .tab-button {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    margin-right: 16px;
+  }
+
+  .search-item {
+    padding: 10px 12px;
+    gap: 12px;
+  }
+
+  .search-item img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .search-info h4 {
+    font-size: 0.85rem;
+  }
+
+  .search-info p {
+    font-size: 0.75rem;
+  }
+}

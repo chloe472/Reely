@@ -29,6 +29,9 @@ function Sidebar() {
         <a href="/" className="nav-item active">
           <span className="nav-text">Dashboard</span>
         </a>
+        <a href="/collections" className="nav-item">
+          <span className="nav-text">Collections</span>
+        </a>
       </nav>
 
       <div className="sidebar-footer">
