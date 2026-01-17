@@ -38,10 +38,15 @@ function Sidebar() {
             </button>
           </>
         ) : (
-          <a href="/login" className="nav-item">
-            <span className="nav-icon">👤</span>
-            <span className="nav-text">Login</span>
-          </a>
+          <>
+            <div className="user-info" style={{ opacity: 0.7 }}>
+              <span className="nav-icon">👤</span>
+              <span className="user-name">Guest User (Testing)</span>
+            </div>
+            <a href="/login" className="nav-item" style={{ fontSize: '0.9rem', padding: '0.5rem' }}>
+              <span className="nav-text">Login to save data</span>
+            </a>
+          </>
         )}
       </div>
     </aside>

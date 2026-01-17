@@ -38,14 +38,31 @@ declare namespace google {
     interface MapOptions {
       center?: LatLngLiteral;
       zoom?: number;
+      minZoom?: number;
+      maxZoom?: number;
       mapTypeControl?: boolean;
       streetViewControl?: boolean;
       fullscreenControl?: boolean;
+      restriction?: MapRestriction;
+    }
+
+    interface MapRestriction {
+      latLngBounds: LatLngBoundsLiteral;
+      strictBounds?: boolean;
+    }
+
+    interface LatLngBoundsLiteral {
+      north: number;
+      south: number;
+      east: number;
+      west: number;
     }
 
     class Marker {
       constructor(options?: MarkerOptions);
       setMap(map: Map | null): void;
+      setDraggable(draggable: boolean): void;
+      addListener(eventName: string, handler: Function): void;
     }
 
     interface MarkerOptions {
@@ -89,6 +106,35 @@ declare namespace google {
     class LatLng {
       lat(): number;
       lng(): number;
+    }
+
+    class StreetViewPanorama {
+      constructor(element: HTMLElement, options?: StreetViewPanoramaOptions);
+      setPosition(latLng: LatLngLiteral): void;
+      setVisible(visible: boolean): void;
+      setPov(pov: StreetViewPov): void;
+    }
+
+    interface StreetViewPanoramaOptions {
+      position?: LatLngLiteral;
+      pov?: StreetViewPov;
+      zoom?: number;
+      addressControl?: boolean;
+      showRoadLabels?: boolean;
+      zoomControl?: boolean;
+      fullscreenControl?: boolean;
+      motionTracking?: boolean;
+      motionTrackingControl?: boolean;
+    }
+
+    interface StreetViewPov {
+      heading: number;
+      pitch: number;
+    }
+
+    namespace event {
+      function addListener(instance: any, eventName: string, handler: Function): void;
+      function trigger(instance: any, eventName: string): void;
     }
   }
 }

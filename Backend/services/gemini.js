@@ -26,9 +26,10 @@ This appears to be a screenshot from TikTok showing a place someone is recommend
 Please identify:
 1. The name of the place/location shown
 2. The full address if visible or can be determined
-3. A brief description of what kind of place it is
-4. The category (restaurant, cafe, bar, attraction, park, store, hotel, etc.)
-5. The city and country if identifiable
+3. GPS coordinates (latitude and longitude) - VERY IMPORTANT for Street View
+4. A brief description of what kind of place it is
+5. The category (restaurant, cafe, bar, attraction, park, store, hotel, etc.)
+6. The city and country if identifiable
 
 Respond ONLY with valid JSON in this exact format (no markdown, no explanation):
 {
@@ -36,11 +37,21 @@ Respond ONLY with valid JSON in this exact format (no markdown, no explanation):
   "address": "Full address if known, or city/area if partial",
   "city": "City name",
   "country": "Country name",
+  "coordinates": {
+    "lat": 0.0,
+    "lng": 0.0
+  },
   "description": "Brief description of what this place is and why it might be recommended",
   "category": "Type of place (restaurant, cafe, bar, attraction, etc.)",
   "confidence": "high/medium/low",
   "additional_info": "Any other relevant details like hours, price range, specialties"
 }
+
+IMPORTANT: 
+- For coordinates, provide the actual GPS coordinates if you can identify the location
+- If you recognize the place, use its known coordinates
+- If uncertain, provide approximate coordinates for the city/area mentioned
+- Coordinates must be valid latitude (-90 to 90) and longitude (-180 to 180) values
 
 If you cannot identify a specific location, provide your best guess with "low" confidence.`;
 

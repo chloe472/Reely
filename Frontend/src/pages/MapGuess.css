@@ -45,16 +45,21 @@
   flex: 1;
   gap: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .image-preview {
-  width: 350px;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 280px;
+  height: 200px;
   background: #ffffff;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
-  position: relative;
-  z-index: 10;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  border: 3px solid #1a73e8;
 }
 
 .image-preview img {
@@ -68,25 +73,135 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+  background: linear-gradient(to top, rgba(26, 115, 232, 0.95), transparent);
   color: white;
-  padding: 20px 16px 16px;
-  font-size: 1.1rem;
+  padding: 16px 12px 10px;
+  font-size: 0.9rem;
   font-weight: 600;
   text-align: center;
 }
 
 .map-section {
   flex: 1;
-  display: flex;
-  flex-direction: column;
   position: relative;
-}
-
-.map-canvas {
-  flex: 1;
   width: 100%;
   height: 100%;
+}
+
+.street-view-canvas {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Small map at bottom-right corner */
+.map-canvas {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 300px;
+  height: 220px;
+  border: 3px solid #1a73e8;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.map-canvas:hover {
+  box-shadow: 0 6px 30px rgba(26, 115, 232, 0.6);
+  border-color: #1557b0;
+}
+
+/* Expanded map (when clicked) */
+.map-canvas.expanded {
+  width: 70vw;
+  height: 70vh;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  cursor: default;
+}
+
+/* Map overlay backdrop */
+.map-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1500;
+  display: none;
+}
+
+.map-overlay.active {
+  display: block;
+}
+
+/* Close button for expanded map */
+.map-close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  background: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 2001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.map-close-button:hover {
+  background: #1557b0;
+  transform: scale(1.1);
+}
+
+/* Click to expand hint */
+.map-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(26, 115, 232, 0.95);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  z-index: 501;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.map-hint:hover {
+  background: rgba(21, 87, 176, 0.95);
+  transform: translateX(-50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.map-canvas.expanded .map-hint {
+  display: none;
 }
 
 .map-controls {
@@ -110,8 +225,14 @@
   font-weight: 500;
 }
 
-.guess-button {
+.control-buttons {
+  display: flex;
+  gap: 12px;
   width: 100%;
+}
+
+.guess-button {
+  flex: 1;
   padding: 14px 32px;
   background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
   color: white;
@@ -136,6 +257,28 @@
   background: #9ca3af;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.clear-button {
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+  white-space: nowrap;
+}
+
+.clear-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.5);
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
 }
 
 .result-panel {

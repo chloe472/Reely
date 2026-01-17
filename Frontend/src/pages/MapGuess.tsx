@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './MapGuess.css';
 
@@ -36,61 +36,136 @@ function MapGuess() {
   const [hasGuessed, setHasGuessed] = useState(false);
   const [result, setResult] = useState<GuessResult | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [userMarker, setUserMarker] = useState<google.maps.Marker | null>(null);
+  const [panorama, setPanorama] = useState<google.maps.StreetViewPanorama | null>(null);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  
+  // Use refs to track state in event listeners
+  const hasGuessedRef = useRef(false);
+  const userMarkerRef = useRef<google.maps.Marker | null>(null);
 
-  // Initialize Google Map
+  // Sync hasGuessed state with ref
+  useEffect(() => {
+    hasGuessedRef.current = hasGuessed;
+  }, [hasGuessed]);
+
+  // Initialize Google Map (only once)
   useEffect(() => {
     if (!currentLocation) {
       navigate('/results');
       return;
     }
 
+    // Skip if map already exists
+    if (map) return;
+
     const loadGoogleMaps = () => {
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        console.error('Google Maps API key is missing. Please add VITE_GOOGLE_MAPS_API_KEY to your .env file');
+        return;
+      }
+      
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
       script.async = true;
       script.defer = true;
       script.onload = initMap;
+      script.onerror = () => {
+        console.error('Failed to load Google Maps API. Check your API key and billing settings.');
+      };
       document.head.appendChild(script);
     };
 
     const initMap = () => {
       const mapElement = document.getElementById('map');
-      if (!mapElement) return;
+      const panoramaElement = document.getElementById('street-view');
+      if (!mapElement || !panoramaElement) return;
 
+      // Use dummy location if no coordinates provided (for testing)
+      const streetViewLocation = currentLocation.coordinates.lat && currentLocation.coordinates.lng 
+        ? currentLocation.coordinates 
+        : { lat: 39.9163, lng: 116.3972 }; // Default: Tiananmen Square, Beijing, China
+
+      // Initialize Street View Panorama at the actual location
+      const streetViewPanorama = new google.maps.StreetViewPanorama(panoramaElement, {
+        position: streetViewLocation,
+        pov: { heading: 0, pitch: 0 },
+        zoom: 1,
+        addressControl: false,
+        showRoadLabels: false,
+        zoomControl: true,
+        fullscreenControl: true,
+        motionTracking: false,
+        motionTrackingControl: false,
+      });
+
+      setPanorama(streetViewPanorama);
+
+      // Initialize regular map (for placing guess pin)
       const googleMap = new google.maps.Map(mapElement, {
         center: { lat: 20, lng: 0 }, // Center of world
         zoom: 2,
+        minZoom: 2, // Prevent zooming out too far
+        maxZoom: 18, // Maximum zoom level
         mapTypeControl: true,
         streetViewControl: false,
         fullscreenControl: false,
+        restriction: {
+          latLngBounds: {
+            north: 85,
+            south: -85,
+            west: -180,
+            east: 180,
+          },
+          strictBounds: false,
+        },
       });
 
       setMap(googleMap);
 
       // Add click listener to place pin
       googleMap.addListener('click', (e: google.maps.MapMouseEvent) => {
-        if (!hasGuessed && e.latLng) {
+        // Don't allow placing pins after guessing
+        if (hasGuessedRef.current) return;
+        
+        if (e.latLng) {
           const clickedLat = e.latLng.lat();
           const clickedLng = e.latLng.lng();
+          
+          // Update guess state
           setUserGuess({ lat: clickedLat, lng: clickedLng });
 
           // Remove old marker if exists
-          if (userMarker) {
-            userMarker.setMap(null);
+          if (userMarkerRef.current) {
+            userMarkerRef.current.setMap(null);
+            userMarkerRef.current = null;
           }
 
-          // Add new marker
+          // Add new marker with draggable capability
           const newMarker = new google.maps.Marker({
             position: { lat: clickedLat, lng: clickedLng },
             map: googleMap,
-            title: 'Your Guess',
+            title: 'Your Guess (drag to adjust)',
             icon: {
               url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
             },
           });
 
-          setUserMarker(newMarker);
+          // Make marker draggable
+          newMarker.setDraggable(true);
+
+          // Update position when marker is dragged
+          google.maps.event.addListener(newMarker, 'dragend', (event: google.maps.MapMouseEvent) => {
+            if (event.latLng) {
+              setUserGuess({ 
+                lat: event.latLng.lat(), 
+                lng: event.latLng.lng() 
+              });
+            }
+          });
+
+          // Store marker in ref
+          userMarkerRef.current = newMarker;
         }
       });
     };
@@ -101,7 +176,7 @@ function MapGuess() {
     } else {
       loadGoogleMaps();
     }
-  }, [currentLocation, navigate, hasGuessed, userMarker]);
+  }, [currentLocation, navigate, map]);
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371; // Radius of the Earth in km
@@ -206,6 +281,24 @@ function MapGuess() {
     }
   };
 
+  const handleClearPin = () => {
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setMap(null);
+      userMarkerRef.current = null;
+    }
+    setUserGuess(null);
+  };
+
+  const toggleMapSize = () => {
+    setIsMapExpanded(!isMapExpanded);
+    // Trigger map resize after expansion/collapse
+    if (map) {
+      setTimeout(() => {
+        google.maps.event.trigger(map, 'resize');
+      }, 300);
+    }
+  };
+
   const handleBackToResults = () => {
     navigate('/results', { 
       state: { locations: allLocations },
@@ -235,21 +328,71 @@ function MapGuess() {
         </div>
 
         <div className="map-section">
-          <div id="map" className="map-canvas"></div>
+          <div id="street-view" className="street-view-canvas"></div>
+          
+          {/* Map overlay backdrop */}
+          <div 
+            className={`map-overlay ${isMapExpanded ? 'active' : ''}`}
+            onClick={toggleMapSize}
+          ></div>
+          
+          {/* Small map at bottom-right (expandable) */}
+          <div 
+            id="map" 
+            className={`map-canvas ${isMapExpanded ? 'expanded' : ''}`}
+          >
+            {/* Hint to expand */}
+            {!isMapExpanded && !hasGuessed && (
+              <div 
+                className="map-hint"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMapSize();
+                }}
+              >
+                Click to expand map
+              </div>
+            )}
+            
+            {/* Close button when expanded */}
+            {isMapExpanded && (
+              <button 
+                className="map-close-button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMapSize();
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
           
           <div className="map-controls">
             {!hasGuessed ? (
               <>
                 <div className="instruction">
-                  {userGuess ? 'Pin placed! Click Guess to submit.' : 'Click anywhere on the map to place your pin'}
+                  {userGuess 
+                    ? '📍 Pin placed! Drag to adjust or click Guess to submit.' 
+                    : 'Explore in Street View, then click the map to place your guess pin'}
                 </div>
-                <button 
-                  className="guess-button"
-                  onClick={handleGuess}
-                  disabled={!userGuess}
-                >
-                  Guess
-                </button>
+                <div className="control-buttons">
+                  <button 
+                    className="guess-button"
+                    onClick={handleGuess}
+                    disabled={!userGuess}
+                  >
+                    Guess
+                  </button>
+                  {userGuess && (
+                    <button 
+                      className="clear-button"
+                      onClick={handleClearPin}
+                    >
+                      Clear Pin
+                    </button>
+                  )}
+                </div>
               </>
             ) : (
               <div className="result-panel">

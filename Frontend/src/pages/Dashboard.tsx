@@ -4,7 +4,7 @@ import Sidebar from '../components/Sidebar';
 import ImageUpload from '../components/ImageUpload';
 import RecentSearches from '../components/RecentSearches';
 import LoadingScreen from '../components/LoadingScreen';
-import { uploadAPI, getUser, getAuthToken, getImageUrl } from '../services/api';
+import { uploadAPI, getAuthToken, getImageUrl } from '../services/api';
 import './Dashboard.css';
 
 interface ImageFile {
@@ -29,13 +29,14 @@ function Dashboard() {
 
   // Check authentication on mount
   useEffect(() => {
-    const token = getAuthToken();
-    const user = getUser();
+    // TEMPORARILY BYPASSED FOR TESTING
+    // const token = getAuthToken();
+    // const user = getUser();
 
-    if (!token || !user) {
-      navigate('/login');
-      return;
-    }
+    // if (!token || !user) {
+    //   navigate('/login');
+    //   return;
+    // }
 
     // Load recent searches from history
     loadRecentSearches();
@@ -43,6 +44,13 @@ function Dashboard() {
 
   const loadRecentSearches = async () => {
     try {
+      // TEMPORARILY BYPASSED - Skip loading history if no auth
+      const token = getAuthToken();
+      if (!token) {
+        console.log('No auth token - skipping recent searches');
+        return;
+      }
+      
       const data = await uploadAPI.getHistory(3, 0);
       const searches: RecentSearch[] = data.uploads.map((upload: any) => ({
         id: upload.id,
@@ -53,6 +61,7 @@ function Dashboard() {
       setRecentSearches(searches);
     } catch (err) {
       console.error('Failed to load recent searches:', err);
+      // Don't show error to user - just skip recent searches
     }
   };
 
@@ -82,6 +91,35 @@ function Dashboard() {
     setError('');
     
     try {
+      // Check if we have authentication
+      const token = getAuthToken();
+      
+      if (!token) {
+        // BYPASS MODE - Create mock data for testing
+        console.log('No auth token - using mock data');
+        
+        const locations = images.map((img, index) => ({
+          id: `mock-${img.id}`,
+          name: `Test Location ${index + 1}`,
+          imageUrl: img.preview,
+          coordinates: {
+            lat: 1.3521 + (Math.random() - 0.5) * 0.1,
+            lng: 103.8198 + (Math.random() - 0.5) * 0.1,
+          },
+          rating: 4.5,
+          reviewCount: 123,
+          priceRange: '$$',
+          category: 'Restaurant',
+          district: 'Central',
+          address: '123 Test Street',
+        }));
+        
+        setIsLoading(false);
+        navigate('/results', { state: { locations } });
+        return;
+      }
+      
+      // Normal authenticated flow
       // Upload each image to backend and get analysis
       const uploadPromises = images.map(img => uploadAPI.uploadScreenshot(img.file));
       const results = await Promise.all(uploadPromises);
