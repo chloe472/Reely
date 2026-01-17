@@ -127,6 +127,24 @@ export const uploadAPI = {
 
     return data;
   },
+
+  // Get leaderboard
+  getLeaderboard: async (limit = 10) => {
+    const response = await fetch(`${API_BASE_URL}/leaderboard?limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fetch leaderboard');
+    }
+
+    return data;
+  },
 };
 
 // Helper to get full image URL

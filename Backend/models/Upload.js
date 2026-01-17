@@ -5,6 +5,8 @@ const uploadSchema = new mongoose.Schema({
     type: String, // Changed to String to support Supabase UUIDs
     required: true
   },
+  user_email: String, // User's email for leaderboard display
+  user_name: String, // User's display name for leaderboard
   filename: String,
   original_name: String,
   location_name: String,

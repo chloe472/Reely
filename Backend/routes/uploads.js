@@ -4,11 +4,21 @@ import mongoose from 'mongoose';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 import Upload from '../models/Upload.js';
 import { analyzeScreenshot, generateMapsUrl, generateStreetViewUrl, validateCoordinates } from '../services/gemini.js';
 import { authenticateToken } from '../middleware/auth.js';
 
+dotenv.config();
+
 const router = express.Router();
+
+// Initialize Supabase client for fetching user profiles
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -135,6 +145,8 @@ router.post('/upload', authenticateToken, upload.single('screenshot'), async (re
     // Save to MongoDB with comprehensive data
     const newUpload = new Upload({
       user_id: req.user.userId,
+      user_email: req.user.email, // Save email for leaderboard
+      user_name: req.user.fullName, // Save full name from Google Auth
       filename: req.file.filename,
       original_name: req.file.originalname,
       location_name: analysis.location_name || 'Unknown Location',
@@ -391,3 +403,132 @@ router.delete('/upload/:id', async (req, res) => {
 // Export router and uploadsDir for static file serving
 export { uploadsDir };
 export default router;
+
+/**
+ * Leaderboard endpoint - Get all registered users with their game stats
+ * Fetches user profiles from Supabase profiles table and matches with MongoDB game data
+ */
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100; // Get more users initially
+
+    console.log('🏆 Fetching leaderboard...');
+
+    // Fetch all user profiles from Supabase public.profiles table
+    const { data: profiles, error: supabaseError } = await supabase
+      .from('profiles')
+      .select('id, email, full_name, avatar_url')
+      .order('created_at', { ascending: false });
+    
+    console.log('📊 Supabase profiles response:');
+    console.log('  - Error:', supabaseError);
+    console.log('  - Profiles count:', profiles?.length || 0);
+    if (profiles && profiles.length > 0) {
+      console.log('  - Sample profile:', JSON.stringify(profiles[0], null, 2));
+    }
+    
+    if (supabaseError) {
+      console.error('⚠️ Supabase profiles error:', supabaseError);
+    }
+
+    // Aggregate game stats from MongoDB
+    const gameStats = await Upload.aggregate([
+      // Include all uploads, not just those with points
+      {
+        $group: {
+          _id: '$user_id',
+          userEmail: { $first: '$user_email' },
+          userName: { $first: '$user_name' },
+          totalPoints: { 
+            $sum: { 
+              $cond: [{ $ifNull: ['$points', false] }, '$points', 0] 
+            } 
+          },
+          gamesPlayed: {
+            $sum: {
+              $cond: [{ $ifNull: ['$points', false] }, 1, 0]
+            }
+          },
+          bestScore: { $max: '$points' },
+          averageDistance: { 
+            $avg: { 
+              $cond: [{ $ifNull: ['$distance_km', false] }, '$distance_km', null] 
+            } 
+          }
+        }
+      }
+    ]);
+
+    // Create a map of user stats
+    const statsMap = new Map();
+    gameStats.forEach(stat => {
+      statsMap.set(stat._id, {
+        totalPoints: stat.totalPoints || 0,
+        gamesPlayed: stat.gamesPlayed || 0,
+        bestScore: stat.bestScore || 0,
+        averageDistance: stat.averageDistance ? Math.round(stat.averageDistance * 100) / 100 : 0
+      });
+    });
+
+    // Build leaderboard with all users from Supabase
+    let leaderboard = [];
+
+    if (profiles && profiles.length > 0) {
+      // Use Supabase profile data
+      leaderboard = profiles.map(profile => {
+        const stats = statsMap.get(profile.id) || {
+          totalPoints: 0,
+          gamesPlayed: 0,
+          bestScore: 0,
+          averageDistance: 0
+        };
+
+        return {
+          userId: profile.id,
+          userEmail: profile.email,
+          userName: profile.full_name,
+          avatarUrl: profile.avatar_url,
+          displayName: profile.full_name || profile.email?.split('@')[0] || 'Anonymous',
+          ...stats
+        };
+      });
+    } else {
+      // Fallback: use MongoDB data only
+      leaderboard = gameStats.map(stat => ({
+        userId: stat._id,
+        userEmail: stat.userEmail,
+        userName: stat.userName,
+        displayName: stat.userName || stat.userEmail?.split('@')[0] || 'Anonymous',
+        totalPoints: stat.totalPoints || 0,
+        gamesPlayed: stat.gamesPlayed || 0,
+        bestScore: stat.bestScore || 0,
+        averageDistance: stat.averageDistance ? Math.round(stat.averageDistance * 100) / 100 : 0
+      }));
+    }
+
+    // Sort by total points descending (users with 0 points will be at the end)
+    leaderboard.sort((a, b) => b.totalPoints - a.totalPoints);
+
+    // Limit results
+    const requestedLimit = parseInt(req.query.limit) || 10;
+    leaderboard = leaderboard.slice(0, requestedLimit);
+
+    console.log('✅ Leaderboard generated:');
+    console.log(`  - Total users: ${leaderboard.length}`);
+    if (leaderboard.length > 0) {
+      console.log('  - Sample entry:', JSON.stringify(leaderboard[0], null, 2));
+    }
+
+    res.json({
+      leaderboard,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Leaderboard error:', error);
+    res.status(500).json({ 
+      error: 'LEADERBOARD_ERROR',
+      message: 'Failed to fetch leaderboard',
+      details: error.message
+    });
+  }
+});

@@ -27,10 +27,12 @@ export async function authenticateToken(req, res, next) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
 
-    // Attach user to request
+    // Attach user to request with full profile data
     req.user = {
       userId: user.id,
-      email: user.email
+      email: user.email,
+      fullName: user.user_metadata?.full_name || user.user_metadata?.name || null,
+      avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null
     };
 
     next();
