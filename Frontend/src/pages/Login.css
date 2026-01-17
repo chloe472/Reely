@@ -23,11 +23,25 @@
   margin-bottom: 32px;
 }
 
+.login-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.login-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
 .login-title {
   font-size: 3rem;
   font-weight: 700;
   color: #fff;
-  margin: 0 0 12px 0;
+  margin: 0;
   letter-spacing: -1px;
 }
 

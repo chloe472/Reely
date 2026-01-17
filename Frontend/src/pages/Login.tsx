@@ -1,6 +1,7 @@
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+import logo from '../assets/logo.png';
 import './Login.css';
 
 function Login() {
@@ -37,7 +38,10 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1 className="login-title">Reely</h1>
+          <div className="login-brand">
+            <img src={logo} alt="Reely Logo" className="login-logo" />
+            <h1 className="login-title">Reely</h1>
+          </div>
           <p className="login-subtitle">
             Transform TikTok screenshots into location information
           </p>

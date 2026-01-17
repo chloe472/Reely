@@ -14,11 +14,24 @@
   padding: 0 24px 32px;
 }
 
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-image {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
 .logo {
   font-size: 1.75rem;
   font-weight: 700;
   color: #1a73e8;
   letter-spacing: -0.5px;
+  margin: 0;
 }
 
 .sidebar-nav {
@@ -168,8 +181,18 @@
     padding: 16px 0;
   }
 
+  .logo-container {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .logo-image {
+    width: 28px;
+    height: 28px;
+  }
+
   .logo {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     text-align: center;
   }
 
