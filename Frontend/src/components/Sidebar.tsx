@@ -1,14 +1,18 @@
+import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { authAPI, getUser } from '../services/api';
 import './Sidebar.css';
 
 function Sidebar() {
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const user = getUser();
 
-  const handleLogout = () => {
-    authAPI.logout();
-    navigate('/login');
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+    }
   };
 
   return (
@@ -21,22 +25,28 @@ function Sidebar() {
         <a href="/" className="nav-item active">
           <span className="nav-text">Dashboard</span>
         </a>
-        <a href="/history" className="nav-item">
-          <span className="nav-text">History</span>
-        </a>
       </nav>
 
       <div className="sidebar-footer">
         {user ? (
-          <>
+          <div className="user-profile">
             <div className="user-info">
-              <span className="nav-icon">👤</span>
-              <span className="user-name">{user.name}</span>
+              {user.user_metadata?.avatar_url && (
+                <img 
+                  src={user.user_metadata.avatar_url} 
+                  alt="Profile" 
+                  className="user-avatar"
+                />
+              )}
+              <div className="user-details">
+                <span className="user-name">{user.user_metadata?.full_name || user.email || 'User'}</span>
+                <span className="user-email">{user.email}</span>
+              </div>
             </div>
-            <button onClick={handleLogout} className="logout-button">
-              Logout
+            <button onClick={handleSignOut} className="logout-button">
+              Sign Out
             </button>
-          </>
+          </div>
         ) : (
           <a href="/login" className="nav-item">
             <span className="nav-icon">👤</span>

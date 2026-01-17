@@ -4,7 +4,8 @@ import Sidebar from '../components/Sidebar';
 import ImageUpload from '../components/ImageUpload';
 import RecentSearches from '../components/RecentSearches';
 import LoadingScreen from '../components/LoadingScreen';
-import { uploadAPI, getUser, getAuthToken, getImageUrl } from '../services/api';
+import { uploadAPI, getImageUrl } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
 interface ImageFile {
@@ -22,24 +23,18 @@ interface RecentSearch {
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth(); // Use context instead of local storage
   const [images, setImages] = useState<ImageFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [error, setError] = useState('');
 
-  // Check authentication on mount
+  // Load recent searches when user is available
   useEffect(() => {
-    const token = getAuthToken();
-    const user = getUser();
-
-    if (!token || !user) {
-      navigate('/login');
-      return;
+    if (user) {
+      loadRecentSearches();
     }
-
-    // Load recent searches from history
-    loadRecentSearches();
-  }, [navigate]);
+  }, [user]);
 
   const loadRecentSearches = async () => {
     try {
@@ -82,30 +77,61 @@ function Dashboard() {
     setError('');
     
     try {
-      // Upload each image to backend and get analysis
+      // Upload each image to backend and get analysis with coordinates
       const uploadPromises = images.map(img => uploadAPI.uploadScreenshot(img.file));
       const results = await Promise.all(uploadPromises);
       
       console.log('Upload results:', results);
       
+      // Check for errors in results
+      const hasErrors = results.some(result => result.hasError && result.errorType !== 'LOW_CONFIDENCE');
+      if (hasErrors) {
+        const errorResult = results.find(r => r.hasError && r.errorType !== 'LOW_CONFIDENCE');
+        throw new Error(errorResult.message || 'Failed to process one or more images');
+      }
+      
+      // Filter out results without valid coordinates
+      const validResults = results.filter(result => 
+        result.coordinates && 
+        result.coordinates.lat && 
+        result.coordinates.lng
+      );
+      
+      if (validResults.length === 0) {
+        throw new Error('No valid coordinates detected in any image. Please try images with clear, identifiable locations.');
+      }
+      
+      // Show warning for low confidence results
+      const lowConfidenceResults = results.filter(r => r.confidence === 'low' || r.errorType === 'LOW_CONFIDENCE');
+      if (lowConfidenceResults.length > 0) {
+        console.warn('Some images had low confidence:', lowConfidenceResults.length);
+        // You could show a warning banner here
+      }
+      
       // Convert backend response to location format
-      const locations = results.map((result) => ({
+      const locations = validResults.map((result) => ({
         id: result.id,
-        name: result.analysis.location_name || 'Unknown Location',
+        name: result.location.name || 'Unknown Location',
         imageUrl: getImageUrl(result.imageUrl),
         coordinates: {
-          lat: result.analysis.latitude || 1.3521,
-          lng: result.analysis.longitude || 103.8198,
+          lat: result.coordinates.lat,
+          lng: result.coordinates.lng,
         },
         rating: result.analysis.rating || undefined,
         reviewCount: result.analysis.reviewCount || undefined,
-        priceRange: result.analysis.price_range || result.analysis.priceRange || undefined,
-        category: result.analysis.category || undefined,
-        district: result.analysis.city || undefined,
-        address: result.analysis.address || undefined,
+        priceRange: result.location.category || undefined,
+        category: result.location.category || undefined,
+        district: result.location.city || undefined,
+        address: result.location.address || undefined,
+        confidence: result.confidence,
+        streetViewUrl: result.street_view_url,
+        googleMapsUrl: result.google_maps_url,
       }));
       
       setIsLoading(false);
+      
+      // Clear images after successful upload
+      setImages([]);
       
       // Reload recent searches
       await loadRecentSearches();
@@ -120,6 +146,10 @@ function Dashboard() {
       alert(err.message || 'Failed to process images. Please try again.');
     }
   };
+
+  if (authLoading) {
+    return <LoadingScreen isLoading={true} />;
+  }
 
   return (
     <div className="dashboard">

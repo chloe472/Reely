@@ -9,6 +9,9 @@ interface Location {
     lat: number;
     lng: number;
   };
+  streetViewUrl?: string;
+  googleMapsUrl?: string;
+  confidence?: string;
 }
 
 interface ResultCardProps {
@@ -19,6 +22,16 @@ interface ResultCardProps {
 }
 
 function ResultCard({ location, gameMode, isSelected, onClick }: ResultCardProps) {
+  const handleStreetView = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering onClick
+    if (location.streetViewUrl) {
+      window.open(location.streetViewUrl, '_blank');
+    } else {
+      const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${location.coordinates.lat},${location.coordinates.lng}`;
+      window.open(url, '_blank');
+    }
+  };
+
   return (
     <div className={`result-card ${isSelected ? 'selected' : ''}`}>
       <div 
@@ -34,6 +47,9 @@ function ResultCard({ location, gameMode, isSelected, onClick }: ResultCardProps
           <div className="image-overlay">
             <span className="overlay-text">Click to guess location</span>
           </div>
+        )}
+        {location.confidence === 'low' && (
+          <div className="confidence-badge low">Low Confidence</div>
         )}
       </div>
 
@@ -56,11 +72,20 @@ function ResultCard({ location, gameMode, isSelected, onClick }: ResultCardProps
           )}
         </div>
 
-        {gameMode && (
-          <button className="guess-button" onClick={onClick}>
-            Guess
-          </button>
-        )}
+        {gameMode ? (
+          <div className="card-actions">
+            <button className="guess-button" onClick={onClick}>
+              Guess
+            </button>
+            <button 
+              className="street-view-button-small" 
+              onClick={handleStreetView}
+              title="View Street View"
+            >
+              📍 Street View
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

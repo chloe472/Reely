@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { uploadAPI } from '../services/api';
 import './MapGuess.css';
 
 interface Location {
@@ -16,6 +17,8 @@ interface Location {
   category?: string;
   district?: string;
   address?: string;
+  streetViewUrl?: string;
+  googleMapsUrl?: string;
 }
 
 interface GuessResult {
@@ -47,7 +50,7 @@ function MapGuess() {
 
     const loadGoogleMaps = () => {
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}`;
       script.async = true;
       script.defer = true;
       script.onload = initMap;
@@ -140,7 +143,7 @@ function MapGuess() {
     return 'Far off';
   };
 
-  const handleGuess = () => {
+  const handleGuess = async () => {
     if (!userGuess || !currentLocation || !map) return;
 
     const distance = calculateDistance(
@@ -155,6 +158,21 @@ function MapGuess() {
 
     setResult({ distance, points, accuracy });
     setHasGuessed(true);
+
+    // Save guessed coordinates to backend
+    try {
+      await uploadAPI.saveGuess(
+        currentLocation.id,
+        userGuess.lat,
+        userGuess.lng,
+        distance,
+        points
+      );
+      console.log('Guess saved successfully');
+    } catch (error) {
+      console.error('Failed to save guess:', error);
+      // Continue with UI update even if save fails
+    }
 
     // Show actual location marker
     new google.maps.Marker({
@@ -287,6 +305,14 @@ function MapGuess() {
                   >
                     Open in Google Maps
                   </button>
+                  {currentLocation.streetViewUrl && (
+                    <button 
+                      className="street-view-button"
+                      onClick={() => window.open(currentLocation.streetViewUrl, '_blank')}
+                    >
+                      View Street View
+                    </button>
+                  )}
                 </div>
               </div>
             )}
