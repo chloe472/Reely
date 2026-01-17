@@ -20,7 +20,7 @@ interface LocationListProps {
   locations: Location[];
   gameMode: boolean;
   onCopyAddress?: (address: string) => void;
-  onOpenInMaps: (coordinates: { lat: number; lng: number }) => void;
+  onOpenInMaps: (location: Location) => void;
   onGuess?: (locationId: string) => void;
 }
 
@@ -61,7 +61,7 @@ function LocationList({ locations, gameMode, onCopyAddress, onOpenInMaps, onGues
                 ) : (
                   <button 
                     className="list-open-maps-button"
-                    onClick={() => onOpenInMaps(location.coordinates)}
+                    onClick={() => onOpenInMaps(location)}
                   >
                     Open in Maps
                   </button>

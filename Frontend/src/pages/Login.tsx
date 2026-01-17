@@ -1,7 +1,7 @@
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import logo from '../assets/logo.png';
+import logo from '../assets/Reely Logo.png';
 import './Login.css';
 
 function Login() {
@@ -27,8 +27,13 @@ function Login() {
   if (loading) {
     return (
       <div className="login-container">
-        <div className="login-card">
-          <p style={{ color: 'white' }}>Loading...</p>
+        <div className="login-card loading-state">
+          <div className="logo-container">
+            <img src={logo} alt="Reely Logo" className="login-logo" />
+          </div>
+          <h2 className="loading-title">Reely</h2>
+          <div className="loading-spinner"></div>
+          <p className="loading-text">Signing you in...</p>
         </div>
       </div>
     );
@@ -38,19 +43,47 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <div className="login-brand">
+          <div className="logo-container">
             <img src={logo} alt="Reely Logo" className="login-logo" />
-            <h1 className="login-title">Reely</h1>
           </div>
+          <h1 className="login-title">Reely</h1>
           <p className="login-subtitle">
-            Transform TikTok screenshots into location information
+            Discover the World, One Frame at a Time
           </p>
         </div>
 
         <div className="login-content">
-          <p className="login-description">
-            Upload screenshots of places from TikTok and let AI extract the location details for you.
-          </p>
+          <div className="features-list">
+            <div className="feature-item">
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+              </div>
+              <span className="feature-text">Upload photos & videos</span>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+              </div>
+              <span className="feature-text">AI-powered location detection</span>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+              </div>
+              <span className="feature-text">Play guessing games</span>
+            </div>
+          </div>
 
           <button className="google-signin-btn" onClick={handleGoogleSignIn}>
             <svg className="google-icon" viewBox="0 0 24 24">
@@ -73,6 +106,14 @@ function Login() {
             </svg>
             Continue with Google
           </button>
+
+          <p className="security-note">
+            <svg className="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            Secure authentication powered by Google
+          </p>
         </div>
 
         <div className="login-footer">
@@ -83,6 +124,12 @@ function Login() {
             <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
           </p>
         </div>
+      </div>
+
+      <div className="background-decoration">
+        <div className="circle circle-1"></div>
+        <div className="circle circle-2"></div>
+        <div className="circle circle-3"></div>
       </div>
     </div>
   );

@@ -65,8 +65,10 @@ function Results({ locations = [] }: ResultsProps) {
     alert('Address copied to clipboard!');
   };
 
-  const handleOpenInMaps = (coordinates: { lat: number; lng: number }) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`;
+  const handleOpenInMaps = (location: Location) => {
+    // Use location name if available, otherwise fall back to coordinates
+    const query = location.name || `${location.coordinates.lat},${location.coordinates.lng}`;
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     window.open(url, '_blank');
   };
 
