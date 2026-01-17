@@ -189,7 +189,6 @@ function MapGuess() {
         distance,
         points
       );
-      console.log('Guess saved successfully');
     } catch (error) {
       console.error('Failed to save guess:', error);
       // Continue with UI update even if save fails
