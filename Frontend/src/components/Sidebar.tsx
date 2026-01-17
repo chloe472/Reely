@@ -20,9 +20,9 @@ function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <div className="logo-container">
-          <img src={logo} alt="Reely Logo" className="logo-image" />
-          <h1 className="logo">Reely</h1>
+        <div className="logo-wrapper">
+          <img src={logo} alt="Reely Logo" className="sidebar-logo" />
+          <h1 className="logo-text">Reely</h1>
         </div>
       </div>
       

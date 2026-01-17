@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import Upload from '../models/Upload.js';
 import { analyzeScreenshot, generateMapsUrl, generateStreetViewUrl, validateCoordinates } from '../services/gemini.js';
+import { processVideo, getVideoMetadata } from '../services/videoProcessor.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 dotenv.config();
@@ -40,15 +41,23 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    // Only allow JPG and PNG files
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    // Allow images and videos
+    const allowedTypes = [
+      'image/jpeg', 
+      'image/jpg', 
+      'image/png',
+      'video/mp4',
+      'video/quicktime', // .mov files
+      'video/x-msvideo',  // .avi files
+      'video/webm'
+    ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only JPG and PNG images are allowed'));
+      cb(new Error('Only JPG, PNG images and MP4, MOV, AVI, WEBM videos are allowed'));
     }
   },
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit for videos
 });
 
 // Health check
@@ -74,9 +83,132 @@ router.post('/upload', authenticateToken, upload.single('screenshot'), async (re
       });
     }
 
-    const imagePath = req.file.path;
+    const filePath = req.file.path;
+    const isVideo = req.file.mimetype.startsWith('video/');
 
-    console.log(`Processing: ${req.file.originalname} for user: ${req.user.userId}`);
+    console.log(`Processing ${isVideo ? 'video' : 'image'}: ${req.file.originalname} for user: ${req.user.userId}`);
+
+    // Handle video files
+    if (isVideo) {
+      try {
+        // Get video metadata
+        const metadata = await getVideoMetadata(filePath);
+        console.log(`Video metadata: ${Math.round(metadata.duration)}s duration, ${metadata.format}`);
+
+        // Process video and extract locations
+        const videoResult = await processVideo(filePath, {
+          fps: 0.2,        // 1 frame every 5 seconds
+          maxFrames: 15,   // Limit to 15 frames to avoid quota issues
+          similarityThreshold: 0.7
+        });
+
+        // Save each unique location to database
+        const savedUploads = [];
+        for (let i = 0; i < videoResult.locations.length; i++) {
+          const location = videoResult.locations[i];
+          
+          const mapsUrl = generateMapsUrl(
+            location.location_name,
+            location.address,
+            location.city,
+            location.country
+          );
+
+          const streetViewUrl = generateStreetViewUrl(
+            location.latitude,
+            location.longitude
+          );
+
+          const newUpload = new Upload({
+            user_id: req.user.userId,
+            user_email: req.user.email,
+            user_name: req.user.fullName,
+            filename: location.frameFilename || req.file.filename, // Use frame filename
+            original_name: `${req.file.originalname} - Location ${i + 1} (${location.timestamp})`,
+            location_name: location.location_name || 'Unknown Location',
+            address: location.address || null,
+            description: location.description || null,
+            category: location.category || null,
+            
+            actual_coordinates: {
+              latitude: location.latitude,
+              longitude: location.longitude
+            },
+            
+            latitude: location.latitude,
+            longitude: location.longitude,
+            
+            confidence: location.confidence || 'low',
+            confidence_reason: location.confidence_reason || null,
+            has_error: false,
+            error_type: null,
+            error_message: null,
+            
+            google_maps_url: mapsUrl,
+            street_view_url: streetViewUrl,
+            raw_response: location
+          });
+
+          await newUpload.save();
+          savedUploads.push(newUpload);
+        }
+
+        // Return video processing results
+        return res.json({
+          type: 'video',
+          filename: req.file.filename,
+          videoUrl: `/uploads/${req.file.filename}`,
+          metadata: {
+            duration: metadata.duration,
+            format: metadata.format,
+            dimensions: `${metadata.width}x${metadata.height}`
+          },
+          processing: {
+            totalFrames: videoResult.totalFrames,
+            analyzedFrames: videoResult.analyzedFrames,
+            uniqueLocations: videoResult.uniqueLocations
+          },
+          locations: savedUploads.map((upload, index) => ({
+            id: upload._id,
+            imageUrl: `/uploads/${upload.filename}`, // Add imageUrl for frame screenshot
+            coordinates: {
+              lat: upload.latitude,
+              lng: upload.longitude
+            },
+            location: {
+              name: upload.location_name,
+              address: upload.address,
+              city: videoResult.locations[index]?.city,
+              country: videoResult.locations[index]?.country,
+              category: upload.category,
+              description: upload.description
+            },
+            confidence: upload.confidence,
+            timestamp: videoResult.locations[index]?.timestamp,
+            google_maps_url: upload.google_maps_url,
+            street_view_url: upload.street_view_url
+          })),
+          message: `Video processed successfully. Found ${videoResult.uniqueLocations} unique location(s)`
+        });
+
+      } catch (videoError) {
+        console.error('Video processing error:', videoError);
+        
+        // Clean up video file on error
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+        
+        return res.status(500).json({
+          error: 'VIDEO_PROCESSING_ERROR',
+          message: 'Failed to process video',
+          details: videoError.message
+        });
+      }
+    }
+
+    // Handle image files (existing logic)
+    const imagePath = filePath;
 
     // Analyze with Gemini Vision API
     const analysis = await analyzeScreenshot(imagePath);
@@ -180,6 +312,7 @@ router.post('/upload', authenticateToken, upload.single('screenshot'), async (re
 
     // Return successful response with coordinates
     res.json({
+      type: 'image',
       id: newUpload._id,
       filename: req.file.filename,
       imageUrl: `/uploads/${req.file.filename}`,

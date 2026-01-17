@@ -13,6 +13,7 @@ interface ImageFile {
   id: string;
   file: File;
   preview: string;
+  type: 'image' | 'video';
 }
 
 interface RecentSearch {
@@ -71,6 +72,7 @@ function Dashboard() {
       id: Math.random().toString(36).substr(2, 9),
       file,
       preview: URL.createObjectURL(file),
+      type: file.type.startsWith('video/') ? 'video' : 'image',
     }));
 
     setImages([...images, ...newImages]);
@@ -82,7 +84,7 @@ function Dashboard() {
 
   const handleSearch = async () => {
     if (images.length === 0) {
-      alert('Please add at least one image before searching.');
+      alert('Please add at least one image or video before searching.');
       return;
     }
     
@@ -90,32 +92,43 @@ function Dashboard() {
     setError('');
     
     try {
-      // Upload each image to backend and get analysis with coordinates
+      // Upload each file to backend and get analysis with coordinates
       const uploadPromises = images.map(img => uploadAPI.uploadScreenshot(img.file));
       const results = await Promise.all(uploadPromises);
       
       console.log('Upload results:', results);
       
+      // Flatten results - videos return multiple locations
+      const allLocations = results.flatMap(result => {
+        if (result.type === 'video') {
+          // Video returns array of locations
+          return result.locations || [];
+        } else {
+          // Image returns single location
+          return [result];
+        }
+      });
+      
       // Check for errors in results
-      const hasErrors = results.some(result => result.hasError && result.errorType !== 'LOW_CONFIDENCE');
+      const hasErrors = allLocations.some(result => result.hasError && result.errorType !== 'LOW_CONFIDENCE');
       if (hasErrors) {
-        const errorResult = results.find(r => r.hasError && r.errorType !== 'LOW_CONFIDENCE');
-        throw new Error(errorResult.message || 'Failed to process one or more images');
+        const errorResult = allLocations.find(r => r.hasError && r.errorType !== 'LOW_CONFIDENCE');
+        throw new Error(errorResult.message || 'Failed to process one or more files');
       }
       
       // Filter out results without valid coordinates
-      const validResults = results.filter(result => 
+      const validResults = allLocations.filter(result => 
         result.coordinates && 
         result.coordinates.lat && 
         result.coordinates.lng
       );
       
       if (validResults.length === 0) {
-        throw new Error('No valid coordinates detected in any image. Please try images with clear, identifiable locations.');
+        throw new Error('No valid coordinates detected in any file. Please try files with clear, identifiable locations.');
       }
       
       // Show warning for low confidence results
-      const lowConfidenceResults = results.filter(r => r.confidence === 'low' || r.errorType === 'LOW_CONFIDENCE');
+      const lowConfidenceResults = allLocations.filter(r => r.confidence === 'low' || r.errorType === 'LOW_CONFIDENCE');
       if (lowConfidenceResults.length > 0) {
         console.warn('Some images had low confidence:', lowConfidenceResults.length);
         // You could show a warning banner here
@@ -124,21 +137,21 @@ function Dashboard() {
       // Convert backend response to location format
       const locations = validResults.map((result) => ({
         id: result.id,
-        name: result.location.name || 'Unknown Location',
-        imageUrl: getImageUrl(result.imageUrl),
+        name: result.location?.name || 'Unknown Location',
+        imageUrl: result.imageUrl ? getImageUrl(result.imageUrl) : undefined,
         coordinates: {
           lat: result.coordinates.lat,
           lng: result.coordinates.lng,
         },
-        rating: result.analysis.rating || undefined,
-        reviewCount: result.analysis.reviewCount || undefined,
-        priceRange: result.location.category || undefined,
-        category: result.location.category || undefined,
-        district: result.location.city || undefined,
-        address: result.location.address || undefined,
+        rating: result.analysis?.rating || undefined,
+        reviewCount: result.analysis?.reviewCount || undefined,
+        priceRange: result.location?.category || undefined,
+        category: result.location?.category || undefined,
+        district: result.location?.city || undefined,
+        address: result.location?.address || undefined,
         confidence: result.confidence,
-        streetViewUrl: result.street_view_url,
-        googleMapsUrl: result.google_maps_url,
+        streetViewUrl: result.street_view_url || result.streetViewUrl,
+        googleMapsUrl: result.google_maps_url || result.googleMapsUrl,
       }));
       
       setIsLoading(false);

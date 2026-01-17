@@ -30,6 +30,11 @@ function Leaderboard({ limit = 10 }: LeaderboardProps) {
     try {
       setLoading(true);
       const data = await uploadAPI.getLeaderboard(limit);
+      console.log('🏆 Leaderboard data received:', data.leaderboard);
+      console.log('📊 Avatar URLs:', data.leaderboard.map(e => ({ 
+        name: e.displayName, 
+        avatar: e.avatarUrl 
+      })));
       setLeaderboard(data.leaderboard);
       setError('');
     } catch (err: any) {
@@ -100,15 +105,27 @@ function Leaderboard({ limit = 10 }: LeaderboardProps) {
             </div>
             <div className="player-col">
               {entry.avatarUrl ? (
-                <img 
-                  src={entry.avatarUrl} 
-                  alt={entry.displayName}
-                  className="player-avatar"
-                  onError={(e) => {
-                    // Fallback to initials if image fails to load
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
+                <>
+                  <img 
+                    src={entry.avatarUrl} 
+                    alt={entry.displayName}
+                    className="player-avatar"
+                    onLoad={() => console.log(`✅ Avatar loaded for ${entry.displayName}`)}
+                    onError={(e) => {
+                      console.error(`❌ Avatar failed for ${entry.displayName}:`, entry.avatarUrl);
+                      // Show placeholder instead
+                      const target = e.currentTarget;
+                      target.style.display = 'none';
+                      const placeholder = target.nextElementSibling as HTMLElement;
+                      if (placeholder) {
+                        placeholder.style.display = 'flex';
+                      }
+                    }}
+                  />
+                  <div className="player-avatar-placeholder" style={{ display: 'none' }}>
+                    {entry.displayName?.charAt(0).toUpperCase() || '?'}
+                  </div>
+                </>
               ) : (
                 <div className="player-avatar-placeholder">
                   {entry.displayName?.charAt(0).toUpperCase() || '?'}
