@@ -2,12 +2,14 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Results from './pages/Results';
 import MapGuess from './pages/MapGuess';
+import Login from './pages/Login';
 import './App.css';
 
 function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<Dashboard />} />
         <Route path="/results" element={<Results />} />
         <Route path="/map-guess" element={<MapGuess />} />
