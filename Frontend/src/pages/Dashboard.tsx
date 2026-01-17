@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import ImageUpload from '../components/ImageUpload';
 import RecentSearches from '../components/RecentSearches';
 import LoadingScreen from '../components/LoadingScreen';
+import Leaderboard from '../components/Leaderboard';
 import { uploadAPI, getImageUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
@@ -181,6 +182,8 @@ function Dashboard() {
           {recentSearches.length > 0 && (
             <RecentSearches searches={recentSearches} />
           )}
+
+          <Leaderboard limit={10} />
         </div>
       </main>
       
