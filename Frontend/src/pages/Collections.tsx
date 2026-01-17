@@ -1,147 +1,168 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { uploadAPI, getImageUrl } from '../services/api';
+import ResultCard from '../components/ResultCard';
+import { uploadAPI, getImageUrl, folderAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import './Collections.css';
 
-interface Upload {
+interface Location {
   id: string;
-  location_name: string;
+  name: string;
   imageUrl: string;
-  created_at: string;
-  latitude: number;
-  longitude: number;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
   confidence?: string;
   address?: string;
 }
 
-interface Batch {
-  id: string;
-  createdAt: Date;
-  imageCount: number;
-  topImages: string[];
-  uploads: Upload[];
+interface Folder {
+  _id: string;
+  name: string;
+  description?: string;
+  uploads: Location[];
 }
 
 function Collections() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const [batches, setBatches] = useState<Batch[]>([]);
+  const [allSearches, setAllSearches] = useState<Location[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [viewMode, setViewMode] = useState<'folders' | 'all'>('folders');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [selectedSearchIds, setSelectedSearchIds] = useState<Set<string>>(new Set());
+  const [folderToAddTo, setFolderToAddTo] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && !authLoading) {
-      loadCollections();
+      loadData();
     }
   }, [user, authLoading]);
 
-  const loadCollections = async () => {
+  const loadData = async () => {
     try {
       setIsLoading(true);
       setError('');
       
       // Fetch all uploads
-      const data = await uploadAPI.getHistory(1000, 0);
-      const uploads: Upload[] = data.uploads || [];
-
-      // Group uploads by batch (upload session)
-      // Uploads within 5 minutes of each other are considered the same batch
-      const BATCH_TIMEOUT = 5 * 60 * 1000; // 5 minutes
-      const batchMap = new Map<string, Upload[]>();
+      const uploadsData = await uploadAPI.getHistory(1000, 0);
+      const uploads = uploadsData.uploads || [];
       
-      // Sort by created_at descending
-      const sortedUploads = [...uploads].sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      const locations: Location[] = uploads.map((upload: any) => ({
+        id: upload.id,
+        name: upload.location_name || 'Unknown Location',
+        imageUrl: getImageUrl(upload.imageUrl),
+        coordinates: {
+          lat: upload.latitude,
+          lng: upload.longitude,
+        },
+        confidence: upload.confidence,
+        address: upload.address,
+      }));
+      
+      setAllSearches(locations);
 
-      let currentBatchId = '';
-      let lastUploadTime: number | null = null;
-
-      sortedUploads.forEach((upload: any) => {
-        const uploadTime = new Date(upload.created_at).getTime();
-        
-        // If this is the first upload or too much time has passed, create a new batch
-        if (!lastUploadTime || (uploadTime - lastUploadTime) > BATCH_TIMEOUT) {
-          currentBatchId = `batch_${uploadTime}`;
-          batchMap.set(currentBatchId, []);
-        }
-        
-        batchMap.get(currentBatchId)!.push({
-          id: upload.id,
-          location_name: upload.location_name || 'Unknown Location',
+      // Fetch folders
+      const foldersData = await folderAPI.getFolders();
+      const processedFolders: Folder[] = (foldersData.folders || []).map((folder: any) => ({
+        _id: folder._id,
+        name: folder.name,
+        description: folder.description,
+        uploads: folder.uploads.map((upload: any) => ({
+          id: upload._id,
+          name: upload.location_name || 'Unknown Location',
           imageUrl: getImageUrl(upload.imageUrl),
-          created_at: upload.created_at,
-          latitude: upload.latitude,
-          longitude: upload.longitude,
+          coordinates: {
+            lat: upload.latitude,
+            lng: upload.longitude,
+          },
           confidence: upload.confidence,
           address: upload.address,
-        });
-        
-        lastUploadTime = uploadTime;
-      });
-
-      // Convert map to batches array
-      const batchesArray: Batch[] = Array.from(batchMap).map(([batchId, uploads]) => {
-        // Get top 3 most recent images from the batch
-        const topImages = uploads
-          .slice(0, 3)
-          .map(u => u.imageUrl);
-
-        return {
-          id: batchId,
-          createdAt: new Date(uploads[0].created_at),
-          imageCount: uploads.length,
-          topImages,
-          uploads,
-        };
-      });
-
-      // Batches are already sorted by time (newest first due to reverse iteration)
-      setBatches(batchesArray);
+        })),
+      }));
+      
+      setFolders(processedFolders);
     } catch (err) {
-      console.error('Failed to load collections:', err);
+      console.error('Failed to load data:', err);
       setError('Failed to load collections. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleBatchClick = (batch: Batch) => {
-    // Convert uploads to locations format
-    const locations = batch.uploads.map((upload) => ({
-      id: upload.id,
-      name: upload.location_name,
-      imageUrl: upload.imageUrl,
-      coordinates: {
-        lat: upload.latitude,
-        lng: upload.longitude,
-      },
-      confidence: upload.confidence,
-      address: upload.address,
-    }));
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) {
+      setError('Folder name cannot be empty');
+      return;
+    }
 
-    // Navigate to results page with the batch's locations
+    try {
+      const result = await folderAPI.createFolder(newFolderName);
+      setFolders([...folders, {
+        _id: result.folder._id,
+        name: result.folder.name,
+        description: result.folder.description,
+        uploads: []
+      }]);
+      setNewFolderName('');
+      setShowCreateFolder(false);
+    } catch (err) {
+      setError('Failed to create folder');
+      console.error(err);
+    }
+  };
+
+  const handleAddSearchesToFolder = async () => {
+    if (!folderToAddTo || selectedSearchIds.size === 0) return;
+
+    try {
+      for (const searchId of selectedSearchIds) {
+        await folderAPI.addUploadToFolder(folderToAddTo, searchId);
+      }
+      
+      // Refresh data
+      await loadData();
+      setSelectedSearchIds(new Set());
+      setFolderToAddTo(null);
+    } catch (err) {
+      setError('Failed to add searches to folder');
+      console.error(err);
+    }
+  };
+
+  const toggleSelectSearch = (searchId: string) => {
+    const newSelected = new Set(selectedSearchIds);
+    if (newSelected.has(searchId)) {
+      newSelected.delete(searchId);
+    } else {
+      newSelected.add(searchId);
+    }
+    setSelectedSearchIds(newSelected);
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    if (window.confirm('Are you sure you want to delete this folder?')) {
+      try {
+        await folderAPI.deleteFolder(folderId);
+        setFolders(folders.filter(f => f._id !== folderId));
+      } catch (err) {
+        setError('Failed to delete folder');
+        console.error(err);
+      }
+    }
+  };
+
+  const handleViewFolder = (folder: Folder) => {
     navigate('/results', {
       state: {
-        locations,
-        collectionName: `Batch - ${batch.createdAt.toLocaleDateString()}`,
+        locations: folder.uploads,
+        collectionName: folder.name,
       }
-    });
-  };
-
-  const handleCreateNewCollection = () => {
-    // Navigate to dashboard to upload new images
-    navigate('/');
-  };
-
-  const formatBatchDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
     });
   };
 
@@ -166,8 +187,8 @@ function Collections() {
           <h1 className="collections-title">Your Collections</h1>
           <button 
             className="create-collection-btn"
-            onClick={handleCreateNewCollection}
-            title="Create new collection by uploading images"
+            onClick={() => navigate('/')}
+            title="Upload new images"
           >
             <span className="plus-icon">+</span>
           </button>
@@ -178,87 +199,162 @@ function Collections() {
             className={`tab-button ${viewMode === 'all' ? 'active' : ''}`}
             onClick={() => setViewMode('all')}
           >
-            All Searches
+            All Searches ({allSearches.length})
           </button>
           <button 
             className={`tab-button ${viewMode === 'folders' ? 'active' : ''}`}
             onClick={() => setViewMode('folders')}
           >
-            Folders
+            Folders ({folders.length})
           </button>
         </div>
 
         {error && (
           <div className="error-message">
             {error}
+            <button 
+              className="error-close"
+              onClick={() => setError('')}
+            >
+              ✕
+            </button>
           </div>
         )}
 
-        {batches.length === 0 ? (
-          <div className="no-collections">
-            <p>No collections yet</p>
-            <p className="subtitle">Upload images from the Dashboard to create your first collection</p>
+        {viewMode === 'folders' ? (
+          <div className="folders-section">
             <button 
-              className="create-btn-secondary"
-              onClick={handleCreateNewCollection}
+              className="create-folder-btn"
+              onClick={() => setShowCreateFolder(!showCreateFolder)}
             >
-              Get Started
+              {showCreateFolder ? '✕ Cancel' : '+ Create Folder'}
             </button>
-          </div>
-        ) : viewMode === 'all' ? (
-          <div className="all-searches-view">
-            {batches.flatMap((batch) => 
-              batch.uploads.map((upload) => (
-                <div 
-                  key={upload.id} 
-                  className="search-item"
-                  onClick={() => handleBatchClick(batch)}
-                >
-                  <img src={upload.imageUrl} alt={upload.location_name} />
-                  <div className="search-info">
-                    <h4>{upload.location_name}</h4>
-                    <p>{new Date(upload.created_at).toLocaleDateString()}</p>
+
+            {showCreateFolder && (
+              <div className="create-folder-form">
+                <input
+                  type="text"
+                  placeholder="Folder name..."
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
+                />
+                <button onClick={handleCreateFolder} className="confirm-btn">
+                  Create
+                </button>
+              </div>
+            )}
+
+            {folders.length === 0 ? (
+              <div className="empty-state">
+                <p>No folders yet</p>
+                <p className="subtitle">Create a folder to organize your searches</p>
+              </div>
+            ) : (
+              <div className="folders-grid">
+                {folders.map((folder) => (
+                  <div key={folder._id} className="folder-item">
+                    <div 
+                      className="folder-preview"
+                      onClick={() => handleViewFolder(folder)}
+                    >
+                      {folder.uploads.length > 0 ? (
+                        <div className="folder-thumbnails">
+                          {folder.uploads.slice(0, 4).map((upload, idx) => (
+                            <img
+                              key={idx}
+                              src={upload.imageUrl}
+                              alt={upload.name}
+                              className="thumbnail"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="folder-placeholder">📁</div>
+                      )}
+                    </div>
+                    <div className="folder-details">
+                      <h3 className="folder-name">{folder.name}</h3>
+                      <p className="folder-count">
+                        {folder.uploads.length} search{folder.uploads.length !== 1 ? 'es' : ''}
+                      </p>
+                    </div>
+                    <button
+                      className="folder-delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteFolder(folder._id);
+                      }}
+                      title="Delete folder"
+                    >
+                      🗑️
+                    </button>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         ) : (
-          <div className="folders-view">
-            {batches.map((batch) => (
-              <div
-                key={batch.id}
-                className="folder-card"
-                onClick={() => handleBatchClick(batch)}
-              >
-                <div className="folder-images">
-                  {batch.topImages.length > 0 ? (
-                    <>
-                      <div className="main-image">
-                        <img src={batch.topImages[0]} alt="Batch preview" />
-                      </div>
-                      {batch.topImages.length > 1 && (
-                        <div className="side-images">
-                          {batch.topImages.slice(1, 3).map((img, idx) => (
-                            <img key={idx} src={img} alt={`Preview ${idx + 2}`} />
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="folder-placeholder">
-                      <span>📸</span>
-                    </div>
-                  )}
-                </div>
-                <div className="folder-info">
-                  <p className="batch-date">{formatBatchDate(batch.createdAt)}</p>
-                  <p className="batch-count">
-                    {batch.imageCount} location{batch.imageCount !== 1 ? 's' : ''}
-                  </p>
-                </div>
+          <div className="all-searches-section">
+            {selectedSearchIds.size > 0 && (
+              <div className="selection-bar">
+                <span>{selectedSearchIds.size} selected</span>
+                <select 
+                  value={folderToAddTo || ''}
+                  onChange={(e) => setFolderToAddTo(e.target.value)}
+                  className="folder-select"
+                >
+                  <option value="">Select folder...</option>
+                  {folders.map((folder) => (
+                    <option key={folder._id} value={folder._id}>
+                      {folder.name}
+                    </option>
+                  ))}
+                </select>
+                {folderToAddTo && (
+                  <button 
+                    className="add-btn"
+                    onClick={handleAddSearchesToFolder}
+                  >
+                    Add to Folder
+                  </button>
+                )}
               </div>
-            ))}
+            )}
+
+            {allSearches.length === 0 ? (
+              <div className="empty-state">
+                <p>No searches yet</p>
+                <p className="subtitle">Upload images from the Dashboard to start</p>
+              </div>
+            ) : (
+              <div className="searches-grid">
+                {allSearches.map((search) => (
+                  <div 
+                    key={search.id}
+                    className={`search-card-wrapper ${selectedSearchIds.has(search.id) ? 'selected' : ''}`}
+                    onClick={() => toggleSelectSearch(search.id)}
+                  >
+                    <div className="selection-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedSearchIds.has(search.id)}
+                        onChange={() => {}}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="search-card">
+                      <ResultCard
+                        location={search}
+                        gameMode={false}
+                        isSelected={false}
+                        onClick={() => {}}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>

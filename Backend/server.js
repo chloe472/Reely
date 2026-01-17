@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import uploadRoutes, { uploadsDir } from './routes/uploads.js';
 import pageRoutes from './routes/pages.js';
 import authRoutes from './routes/auth.js';
+import folderRoutes from './routes/folders.js';
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use('/uploads', express.static(uploadsDir));
 app.use(pageRoutes);
 app.use(authRoutes);
 app.use(uploadRoutes);
+app.use(folderRoutes);
 
 // Error handling middleware
 app.use((error, req, res, next) => {
