@@ -5,6 +5,7 @@ interface ImageFile {
   id: string;
   file: File;
   preview: string;
+  type: 'image' | 'video';
 }
 
 interface ImageUploadProps {
@@ -29,11 +30,15 @@ function ImageUpload({ images, onAddImages, onRemoveImage }: ImageUploadProps) {
       <div className="images-grid">
         {images.map((image) => (
           <div key={image.id} className="image-card">
-            <img src={image.preview} alt="Uploaded" className="uploaded-image" />
+            {image.type === 'video' ? (
+              <video src={image.preview} className="uploaded-image" controls />
+            ) : (
+              <img src={image.preview} alt="Uploaded" className="uploaded-image" />
+            )}
             <button
               className="remove-button"
               onClick={() => onRemoveImage(image.id)}
-              aria-label="Remove image"
+              aria-label="Remove file"
             >
               ✕
             </button>
@@ -42,21 +47,21 @@ function ImageUpload({ images, onAddImages, onRemoveImage }: ImageUploadProps) {
         
         <div className="add-image-card" onClick={handleAddClick}>
           <div className="add-icon">+</div>
-          <span className="add-text">Add Image</span>
+          <span className="add-text">Add Image/Video</span>
         </div>
       </div>
 
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/mp4,video/quicktime,video/webm,video/x-msvideo"
         multiple
         onChange={handleFileChange}
         className="file-input"
       />
 
       <button className="add-images-button" onClick={handleAddClick}>
-        Add images
+        Add images or videos
       </button>
     </div>
   );

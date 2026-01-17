@@ -81,7 +81,7 @@ If you cannot confidently identify the location or coordinates:
 
   try {
     const response = await aiClient.models.generateContent({
-      model: 'gemini-2.5-flash', // Using Gemini 2.5 Flash model
+      model: 'gemini-2.5-flash', // Using Gemini 1.5 Flash - best free tier
       contents: [
         {
           role: 'user',
