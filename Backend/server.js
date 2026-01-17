@@ -174,12 +174,12 @@ app.post('/api/upload', upload.single('screenshot'), async (req, res) => {
 
     const imagePath = req.file.path;
 
-    console.log(`📸 Processing: ${req.file.originalname}`);
+    console.log(`Processing: ${req.file.originalname}`);
 
     // Analyze with Gemini
     const analysis = await analyzeScreenshot(imagePath);
 
-    console.log(`✅ Analysis complete:`, analysis.location_name);
+    console.log(`Analysis complete:`, analysis.location_name);
 
     // Generate Google Maps URL
     const mapsUrl = generateMapsUrl(
@@ -317,7 +317,7 @@ app.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════════════╗
 ║                                              ║
-║   🎬 Reely Backend is running!               ║
+║   Reely Backend is running!                  ║
 ║                                              ║
 ║   Local:  http://localhost:${PORT}             ║
 ║                                              ║
