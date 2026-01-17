@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import './Sidebar.css';
 
@@ -27,12 +27,15 @@ function Sidebar() {
       </div>
       
       <nav className="sidebar-nav">
-        <a href="/" className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+        <Link to="/" className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
           <span className="nav-text">Dashboard</span>
-        </a>
-        <a href="/collections" className={`nav-item ${location.pathname === '/collections' ? 'active' : ''}`}>
+        </Link>
+        <Link to="/search-history" className={`nav-item ${location.pathname === '/search-history' ? 'active' : ''}`}>
+          <span className="nav-text">Search History</span>
+        </Link>
+        <Link to="/collections" className={`nav-item ${location.pathname === '/collections' ? 'active' : ''}`}>
           <span className="nav-text">Collections</span>
-        </a>
+        </Link>
       </nav>
 
       <div className="sidebar-footer">

@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import SearchHistory from './pages/SearchHistory';
 import Collections from './pages/Collections';
 import Results from './pages/Results';
 import MapGuess from './pages/MapGuess';
@@ -22,6 +23,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/search-history"
+            element={
+              <ProtectedRoute>
+                <SearchHistory />
               </ProtectedRoute>
             }
           />

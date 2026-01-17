@@ -20,6 +20,12 @@ interface RecentSearch {
   locationName: string;
   image: string;
   timestamp: Date;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  address?: string;
+  confidence?: string;
 }
 
 function Dashboard() {
@@ -45,6 +51,12 @@ function Dashboard() {
         locationName: upload.location_name || 'Unknown Location',
         image: getImageUrl(upload.imageUrl),
         timestamp: new Date(upload.created_at),
+        coordinates: upload.latitude && upload.longitude ? {
+          lat: upload.latitude,
+          lng: upload.longitude,
+        } : undefined,
+        address: upload.address,
+        confidence: upload.confidence,
       }));
       setRecentSearches(searches);
     } catch (err) {

@@ -33,7 +33,12 @@ interface ResultsProps {
 function Results({ locations = [] }: ResultsProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [gameMode, setGameMode] = useState(true); // Auto-enabled on load
+  
+  // Check if game mode is explicitly set in state, otherwise default based on source
+  const isFromCollections = location.state?.collectionName;
+  const explicitGameMode = location.state?.gameMode;
+  const defaultGameMode = explicitGameMode !== undefined ? explicitGameMode : !isFromCollections;
+  const [gameMode, setGameMode] = useState(defaultGameMode);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card'); // Card or List view
 
   // Get locations from navigation state (passed from Dashboard)
@@ -70,23 +75,18 @@ function Results({ locations = [] }: ResultsProps) {
     window.open(url, '_blank');
   };
 
-  const handleOpenStreetView = (location: Location) => {
-    if (location.streetViewUrl) {
-      window.open(location.streetViewUrl, '_blank');
-    } else {
-      // Fallback to coordinate-based Street View URL
-      const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${location.coordinates.lat},${location.coordinates.lng}`;
-      window.open(url, '_blank');
-    }
-  };
-
   return (
     <div className="results">
       <Sidebar />
       <main className="results-main">
         <div className="results-header">
           <h1 className="results-title">
-            {gameMode ? 'Save it to your Google Maps!' : 'Your Results'}
+            {location.state?.collectionName 
+              ? `Collection: ${location.state.collectionName}` 
+              : gameMode 
+                ? 'Save it to your Google Maps!' 
+                : 'Your Results'
+            }
           </h1>
           
           <div className="results-controls">
