@@ -191,7 +191,8 @@
 
 .next-button,
 .finish-button,
-.open-maps-button {
+.open-maps-button,
+.street-view-button {
   width: 100%;
   padding: 12px 24px;
   border: none;
@@ -233,6 +234,17 @@
 .open-maps-button:hover {
   background: #e8f0fe;
   transform: translateY(-1px);
+}
+
+.street-view-button {
+  background: linear-gradient(135deg, #ea4335 0%, #d33426 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(234, 67, 53, 0.4);
+}
+
+.street-view-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(234, 67, 53, 0.5);
 }
 
 /* Responsive Design */

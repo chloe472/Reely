@@ -85,8 +85,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      // Force local cleanup even if network request fails (Safari ITP fix)
+      setSession(null);
+      setUser(null);
+      setLoading(false);
+    }
   };
 
   return (

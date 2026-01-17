@@ -105,6 +105,28 @@ export const uploadAPI = {
 
     return data;
   },
+
+  // Save user's guessed coordinates
+  saveGuess: async (id: string, latitude: number, longitude: number, distance?: number, points?: number) => {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_BASE_URL}/upload/${id}/guess`, {
+      method: 'PATCH',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ latitude, longitude, distance, points }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to save guess');
+    }
+
+    return data;
+  },
 };
 
 // Helper to get full image URL

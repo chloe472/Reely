@@ -21,6 +21,9 @@ interface Location {
   category?: string;
   district?: string;
   address?: string;
+  streetViewUrl?: string;
+  googleMapsUrl?: string;
+  confidence?: string;
 }
 
 interface ResultsProps {
@@ -65,6 +68,16 @@ function Results({ locations = [] }: ResultsProps) {
   const handleOpenInMaps = (coordinates: { lat: number; lng: number }) => {
     const url = `https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`;
     window.open(url, '_blank');
+  };
+
+  const handleOpenStreetView = (location: Location) => {
+    if (location.streetViewUrl) {
+      window.open(location.streetViewUrl, '_blank');
+    } else {
+      // Fallback to coordinate-based Street View URL
+      const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${location.coordinates.lat},${location.coordinates.lng}`;
+      window.open(url, '_blank');
+    }
   };
 
   return (
