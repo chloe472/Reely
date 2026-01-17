@@ -10,6 +10,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Fallback to avoid crashing app if keys are missing
 // The auth won't work, but at least the page will render
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
+  supabaseUrl,
+  supabaseAnonKey
 );
