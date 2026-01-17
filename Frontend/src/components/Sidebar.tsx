@@ -1,6 +1,16 @@
+import { useNavigate } from 'react-router-dom';
+import { authAPI, getUser } from '../services/api';
 import './Sidebar.css';
 
 function Sidebar() {
+  const navigate = useNavigate();
+  const user = getUser();
+
+  const handleLogout = () => {
+    authAPI.logout();
+    navigate('/login');
+  };
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -17,10 +27,22 @@ function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        <a href="/profile" className="nav-item">
-          <span className="nav-icon">👤</span>
-          <span className="nav-text">Login/User Profile</span>
-        </a>
+        {user ? (
+          <>
+            <div className="user-info">
+              <span className="nav-icon">👤</span>
+              <span className="user-name">{user.name}</span>
+            </div>
+            <button onClick={handleLogout} className="logout-button">
+              Logout
+            </button>
+          </>
+        ) : (
+          <a href="/login" className="nav-item">
+            <span className="nav-icon">👤</span>
+            <span className="nav-text">Login</span>
+          </a>
+        )}
       </div>
     </aside>
   );
