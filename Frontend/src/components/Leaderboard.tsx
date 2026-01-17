@@ -31,7 +31,7 @@ function Leaderboard({ limit = 10 }: LeaderboardProps) {
       setLoading(true);
       const data = await uploadAPI.getLeaderboard(limit);
       console.log('🏆 Leaderboard data received:', data.leaderboard);
-      console.log('📊 Avatar URLs:', data.leaderboard.map(e => ({ 
+      console.log('📊 Avatar URLs:', data.leaderboard.map((e: LeaderboardEntry) => ({ 
         name: e.displayName, 
         avatar: e.avatarUrl 
       })));
@@ -111,7 +111,7 @@ function Leaderboard({ limit = 10 }: LeaderboardProps) {
                     alt={entry.displayName}
                     className="player-avatar"
                     onLoad={() => console.log(`✅ Avatar loaded for ${entry.displayName}`)}
-                    onError={(e) => {
+                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                       console.error(`❌ Avatar failed for ${entry.displayName}:`, entry.avatarUrl);
                       // Show placeholder instead
                       const target = e.currentTarget;
@@ -133,7 +133,7 @@ function Leaderboard({ limit = 10 }: LeaderboardProps) {
               )}
               <div className="player-info">
                 <span className="player-name">
-                  {entry.userName || entry.displayName}
+                  {entry.displayName}
                 </span>
                 {entry.averageDistance > 0 && (
                   <span className="player-stat">

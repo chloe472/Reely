@@ -150,7 +150,7 @@ function Results({ locations = [] }: ResultsProps) {
                   key={location.id}
                   location={location}
                   onCopyAddress={handleCopyAddress}
-                  onOpenInMaps={handleOpenInMaps}
+                  onOpenInMaps={() => handleOpenInMaps(location)}
                 />
               ))
             )
