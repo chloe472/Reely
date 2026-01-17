@@ -298,10 +298,14 @@ function MapGuess() {
                   )}
                   <button 
                     className="open-maps-button"
-                    onClick={() => window.open(
-                      `https://www.google.com/maps/search/?api=1&query=${currentLocation.coordinates.lat},${currentLocation.coordinates.lng}`,
-                      '_blank'
-                    )}
+                    onClick={() => {
+                      // Use location name if available, otherwise fall back to coordinates
+                      const query = currentLocation.name || `${currentLocation.coordinates.lat},${currentLocation.coordinates.lng}`;
+                      window.open(
+                        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
+                        '_blank'
+                      );
+                    }}
                   >
                     Open in Google Maps
                   </button>
