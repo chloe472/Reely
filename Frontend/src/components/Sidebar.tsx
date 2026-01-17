@@ -1,11 +1,12 @@
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../assets/Reely Logo.png';
 import './Sidebar.css';
 
 function Sidebar() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSignOut = async () => {
     try {
@@ -26,8 +27,11 @@ function Sidebar() {
       </div>
       
       <nav className="sidebar-nav">
-        <a href="/" className="nav-item active">
+        <a href="/" className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
           <span className="nav-text">Dashboard</span>
+        </a>
+        <a href="/collections" className={`nav-item ${location.pathname === '/collections' ? 'active' : ''}`}>
+          <span className="nav-text">Collections</span>
         </a>
       </nav>
 

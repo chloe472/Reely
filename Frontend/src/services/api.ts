@@ -147,6 +147,164 @@ export const uploadAPI = {
   },
 };
 
+// Folder API
+export const folderAPI = {
+  // Get all folders
+  getFolders: async () => {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_BASE_URL}/folders`, {
+      method: 'GET',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fetch folders');
+    }
+
+    return data;
+  },
+
+  // Create folder
+  createFolder: async (name: string, description?: string) => {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_BASE_URL}/folders`, {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, description }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create folder');
+    }
+
+    return data;
+  },
+
+  // Get folder by ID
+  getFolder: async (folderId: string) => {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_BASE_URL}/folders/${folderId}`, {
+      method: 'GET',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fetch folder');
+    }
+
+    return data;
+  },
+
+  // Update folder
+  updateFolder: async (folderId: string, name?: string, description?: string) => {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_BASE_URL}/folders/${folderId}`, {
+      method: 'PUT',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, description }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to update folder');
+    }
+
+    return data;
+  },
+
+  // Delete folder
+  deleteFolder: async (folderId: string) => {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_BASE_URL}/folders/${folderId}`, {
+      method: 'DELETE',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to delete folder');
+    }
+
+    return data;
+  },
+
+  // Add upload to folder
+  addUploadToFolder: async (folderId: string, uploadId: string) => {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(
+      `${API_BASE_URL}/folders/${folderId}/uploads/${uploadId}`,
+      {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to add upload to folder');
+    }
+
+    return data;
+  },
+
+  // Remove upload from folder
+  removeUploadFromFolder: async (folderId: string, uploadId: string) => {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(
+      `${API_BASE_URL}/folders/${folderId}/uploads/${uploadId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to remove upload from folder');
+    }
+
+    return data;
+  },
+};
+
 // Helper to get full image URL
 export const getImageUrl = (imageUrl: string): string => {
   if (!imageUrl) return '';
