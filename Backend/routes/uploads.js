@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import Upload from '../models/Upload.js';
 import { analyzeScreenshot, generateMapsUrl } from '../services/gemini.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -48,7 +49,7 @@ router.get('/health', (req, res) => {
 });
 
 // Upload and analyze screenshot
-router.post('/upload', upload.single('screenshot'), async (req, res) => {
+router.post('/upload', authenticateToken, upload.single('screenshot'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -56,7 +57,7 @@ router.post('/upload', upload.single('screenshot'), async (req, res) => {
 
     const imagePath = req.file.path;
 
-    console.log(`Processing: ${req.file.originalname}`);
+    console.log(`Processing: ${req.file.originalname} for user: ${req.user.userId}`);
 
     // Analyze with Gemini
     const analysis = await analyzeScreenshot(imagePath);
@@ -71,8 +72,9 @@ router.post('/upload', upload.single('screenshot'), async (req, res) => {
       analysis.country
     );
 
-    // Save to MongoDB
+    // Save to MongoDB with user association
     const newUpload = new Upload({
+      user_id: req.user.userId,
       filename: req.file.filename,
       original_name: req.file.originalname,
       location_name: analysis.location_name || null,
@@ -100,18 +102,19 @@ router.post('/upload', upload.single('screenshot'), async (req, res) => {
   }
 });
 
-// Get upload history
-router.get('/history', async (req, res) => {
+// Get upload history (only for authenticated user)
+router.get('/history', authenticateToken, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
     const skip = parseInt(req.query.offset) || 0;
 
-    const uploads = await Upload.find()
+    // Only fetch uploads for the authenticated user
+    const uploads = await Upload.find({ user_id: req.user.userId })
       .sort({ created_at: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await Upload.countDocuments();
+    const total = await Upload.countDocuments({ user_id: req.user.userId });
 
     // Format response
     const processed = uploads.map(upload => ({

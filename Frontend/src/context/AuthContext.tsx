@@ -18,31 +18,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Just listen to Supabase. It handles the hash automatically.
-    // We don't need to manually check window.location.hash.
-    
-    // 1. Get initial session (local storage)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      // Don't set loading false yet if we have a hash - wait for the event
-      if (!window.location.hash.includes('access_token')) {
+    let mounted = true;
+
+    // Safety timeout: If Supabase doesn't respond in 2 seconds, stop loading
+    const timeoutId = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('Auth check timed out, forcing render');
         setLoading(false);
       }
-    });
+    }, 2000);
 
-    // 2. Listen for auth changes (including hash parsing!)
+    const initAuth = async () => {
+      try {
+        // 1. Get initial session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          // Only stop loading if we DON'T have a hash to process
+          // If we have a hash, we wait for the onAuthStateChange event
+          if (!window.location.hash.includes('access_token')) {
+            setLoading(false);
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initAuth();
+
+    // 2. Listen for auth changes (this catches the hash parsing)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        console.log('Auth Event:', _event, session?.user?.email);
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+        console.log('Auth Event:', _event);
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false); // Valid event received, stop loading
+        }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithGoogle = async () => {

@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import './Login.css';
 
@@ -8,8 +8,10 @@ function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user && !loading) {
-      navigate('/');
+    // Only redirect if user is authenticated
+    if (!loading && user) {
+      // Use replace: true to prevent back-button loop
+      navigate('/', { replace: true });
     }
   }, [user, loading, navigate]);
 
@@ -25,7 +27,7 @@ function Login() {
     return (
       <div className="login-container">
         <div className="login-card">
-          <p>Loading...</p>
+          <p style={{ color: 'white' }}>Loading...</p>
         </div>
       </div>
     );

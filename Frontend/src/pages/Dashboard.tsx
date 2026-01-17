@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import ImageUpload from '../components/ImageUpload';
 import RecentSearches from '../components/RecentSearches';
 import LoadingScreen from '../components/LoadingScreen';
+import { uploadAPI, getImageUrl } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
 interface ImageFile {
@@ -21,28 +23,33 @@ interface RecentSearch {
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth(); // Use context instead of local storage
   const [images, setImages] = useState<ImageFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [recentSearches] = useState<RecentSearch[]>([
-    {
-      id: '1',
-      locationName: 'Sample Location 1',
-      image: 'https://via.placeholder.com/300x200',
-      timestamp: new Date(),
-    },
-    {
-      id: '2',
-      locationName: 'Sample Location 2',
-      image: 'https://via.placeholder.com/300x200',
-      timestamp: new Date(),
-    },
-    {
-      id: '3',
-      locationName: 'Sample Location 3',
-      image: 'https://via.placeholder.com/300x200',
-      timestamp: new Date(),
-    },
-  ]);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [error, setError] = useState('');
+
+  // Load recent searches when user is available
+  useEffect(() => {
+    if (user) {
+      loadRecentSearches();
+    }
+  }, [user]);
+
+  const loadRecentSearches = async () => {
+    try {
+      const data = await uploadAPI.getHistory(3, 0);
+      const searches: RecentSearch[] = data.uploads.map((upload: any) => ({
+        id: upload.id,
+        locationName: upload.location_name || 'Unknown Location',
+        image: getImageUrl(upload.imageUrl),
+        timestamp: new Date(upload.created_at),
+      }));
+      setRecentSearches(searches);
+    } catch (err) {
+      console.error('Failed to load recent searches:', err);
+    }
+  };
 
   const handleAddImages = (files: FileList | null) => {
     if (!files) return;
@@ -60,43 +67,58 @@ function Dashboard() {
     setImages(images.filter((img) => img.id !== id));
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (images.length === 0) {
       alert('Please add at least one image before searching.');
       return;
     }
     
-    // Show loading screen
     setIsLoading(true);
+    setError('');
     
-    // Simulate API call - Replace this with your actual backend API call
-    setTimeout(() => {
-      console.log('Searching with images:', images);
+    try {
+      // Upload each image to backend and get analysis
+      const uploadPromises = images.map(img => uploadAPI.uploadScreenshot(img.file));
+      const results = await Promise.all(uploadPromises);
       
-      // Convert images to location format for Results page
-      // TODO: Replace with actual backend response
-      const locations = images.map((img, index) => ({
-        id: img.id,
-        name: `Location ${index + 1}`,
-        imageUrl: img.preview,
+      console.log('Upload results:', results);
+      
+      // Convert backend response to location format
+      const locations = results.map((result) => ({
+        id: result.id,
+        name: result.analysis.location_name || 'Unknown Location',
+        imageUrl: getImageUrl(result.imageUrl),
         coordinates: {
-          lat: 1.3521 + (index * 0.05), // Mock coordinates
-          lng: 103.8198 + (index * 0.05),
+          lat: result.analysis.latitude || 1.3521,
+          lng: result.analysis.longitude || 103.8198,
         },
-        // Backend should provide these fields:
-        rating: 4.5,
-        reviewCount: '9,491',
-        priceRange: 'RM 20-60',
-        category: 'Cafe',
-        district: 'Johor Bahru',
-        address: '171, Jln Beringin, Taman Melodies, 80250 Johor Bahru, Johor Darul Ta\'zim, Malaysia',
+        rating: result.analysis.rating || undefined,
+        reviewCount: result.analysis.reviewCount || undefined,
+        priceRange: result.analysis.price_range || result.analysis.priceRange || undefined,
+        category: result.analysis.category || undefined,
+        district: result.analysis.city || undefined,
+        address: result.analysis.address || undefined,
       }));
       
       setIsLoading(false);
-      // Navigate to results page with image data
+      
+      // Reload recent searches
+      await loadRecentSearches();
+      
+      // Navigate to results page
       navigate('/results', { state: { locations } });
-    }, 3000); // 3 second delay to simulate API processing
+      
+    } catch (err: any) {
+      console.error('Search error:', err);
+      setIsLoading(false);
+      setError(err.message || 'Failed to process images. Please try again.');
+      alert(err.message || 'Failed to process images. Please try again.');
+    }
   };
+
+  if (authLoading) {
+    return <LoadingScreen isLoading={true} />;
+  }
 
   return (
     <div className="dashboard">
@@ -104,6 +126,12 @@ function Dashboard() {
       <main className="dashboard-main">
         <div className="dashboard-content">
           <h1 className="dashboard-title">Dashboard</h1>
+          
+          {error && (
+            <div className="error-banner">
+              {error}
+            </div>
+          )}
           
           <ImageUpload
             images={images}
@@ -116,10 +144,12 @@ function Dashboard() {
             onClick={handleSearch}
             disabled={images.length === 0 || isLoading}
           >
-            Search
+            {isLoading ? 'Processing...' : 'Search'}
           </button>
 
-          <RecentSearches searches={recentSearches} />
+          {recentSearches.length > 0 && (
+            <RecentSearches searches={recentSearches} />
+          )}
         </div>
       </main>
       

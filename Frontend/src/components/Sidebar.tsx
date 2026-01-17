@@ -31,7 +31,7 @@ function Sidebar() {
         {user ? (
           <div className="user-profile">
             <div className="user-info">
-              {user.user_metadata.avatar_url && (
+              {user.user_metadata?.avatar_url && (
                 <img 
                   src={user.user_metadata.avatar_url} 
                   alt="Profile" 
@@ -39,7 +39,7 @@ function Sidebar() {
                 />
               )}
               <div className="user-details">
-                <span className="user-name">{user.user_metadata.full_name || 'User'}</span>
+                <span className="user-name">{user.user_metadata?.full_name || user.email || 'User'}</span>
                 <span className="user-email">{user.email}</span>
               </div>
             </div>
