@@ -1,6 +1,13 @@
 # Reely
 
-A modern short-form video sharing platform.
+A web-based application that transforms TikTok screenshots of places into actionable location information. Upload screenshots of recommended spots from TikTok, and let the Gemini API analyze and extract location details for you. The home page features an easy upload button and displays your complete history of processed results.
+
+## Features
+
+- **Screenshot Upload** – Easily upload TikTok screenshots of places you want to visit
+- **AI-Powered Analysis** – Gemini API processes images to identify and extract location information
+- **Location Results** – Get detailed information about the places shown in your screenshots
+- **Upload History** – View all your previous uploads and results on the home page
 
 ## Project Structure
 
@@ -46,6 +53,3 @@ Reely/
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
-
-This project is licensed under the MIT License.
