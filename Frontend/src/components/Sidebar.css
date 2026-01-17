@@ -14,6 +14,30 @@
   padding: 0 24px 32px;
 }
 
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.logo-text {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
 .logo {
   font-size: 1.75rem;
   font-weight: 700;
@@ -166,6 +190,19 @@
     width: 80px;
     min-width: 80px;
     padding: 16px 0;
+  }
+
+  .logo-wrapper {
+    justify-content: center;
+  }
+
+  .logo-text {
+    display: none;
+  }
+
+  .sidebar-logo {
+    width: 36px;
+    height: 36px;
   }
 
   .logo {

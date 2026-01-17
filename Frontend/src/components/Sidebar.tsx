@@ -1,5 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import logo from '../assets/Reely Logo.png';
 import './Sidebar.css';
 
 function Sidebar() {
@@ -18,7 +19,10 @@ function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h1 className="logo">Reely</h1>
+        <div className="logo-wrapper">
+          <img src={logo} alt="Reely Logo" className="sidebar-logo" />
+          <h1 className="logo-text">Reely</h1>
+        </div>
       </div>
       
       <nav className="sidebar-nav">
