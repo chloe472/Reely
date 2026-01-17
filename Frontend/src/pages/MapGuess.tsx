@@ -39,7 +39,6 @@ function MapGuess() {
   const [hasGuessed, setHasGuessed] = useState(false);
   const [result, setResult] = useState<GuessResult | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [streetView, setStreetView] = useState<google.maps.StreetViewPanorama | null>(null);
   const [userMarker, setUserMarker] = useState<google.maps.Marker | null>(null);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
@@ -63,8 +62,8 @@ function MapGuess() {
     const initMapsAndStreetView = () => {
       // Initialize Street View
       const streetViewElement = document.getElementById('street-view');
-      if (streetViewElement) {
-        const panorama = new google.maps.StreetViewPanorama(streetViewElement, {
+      if (streetViewElement && 'google' in window) {
+        new (window as any).google.maps.StreetViewPanorama(streetViewElement, {
           position: currentLocation.coordinates,
           pov: { heading: 0, pitch: 0 },
           zoom: 1,
@@ -74,7 +73,6 @@ function MapGuess() {
           enableCloseButton: false,
           fullscreenControl: false,
         });
-        setStreetView(panorama);
       }
 
       // Initialize Map
@@ -87,7 +85,6 @@ function MapGuess() {
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
-        zoomControl: true,
       });
 
       setMap(googleMap);

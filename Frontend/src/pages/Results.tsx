@@ -72,16 +72,6 @@ function Results({ locations = [] }: ResultsProps) {
     window.open(url, '_blank');
   };
 
-  const handleOpenStreetView = (location: Location) => {
-    if (location.streetViewUrl) {
-      window.open(location.streetViewUrl, '_blank');
-    } else {
-      // Fallback to coordinate-based Street View URL
-      const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${location.coordinates.lat},${location.coordinates.lng}`;
-      window.open(url, '_blank');
-    }
-  };
-
   return (
     <div className="results">
       <Sidebar />
@@ -150,7 +140,7 @@ function Results({ locations = [] }: ResultsProps) {
                   key={location.id}
                   location={location}
                   onCopyAddress={handleCopyAddress}
-                  onOpenInMaps={handleOpenInMaps}
+                  onOpenInMaps={() => handleOpenInMaps(location)}
                 />
               ))
             )

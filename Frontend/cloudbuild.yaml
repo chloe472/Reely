@@ -1,0 +1,17 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'VITE_API_URL=https://reely-702065398644.asia-southeast1.run.app'
+      - '--build-arg'
+      - 'VITE_SUPABASE_URL=https://vrzdmihixjmdliwzqzav.supabase.co'
+      - '--build-arg'
+      - 'VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyemRtaWhpeGptZGxpd3pxemF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MDAwMzgsImV4cCI6MjA4NDE3NjAzOH0.nQJD38iQVlqW84xOBRjnO0u6EF8xUFFhT800du4boW4'
+      - '--build-arg'
+      - 'VITE_GOOGLE_MAPS_KEY=AIzaSyCdwqfxWWW5YmzyJ6-T7Un7HDYE6eeaN90'
+      - '-t'
+      - 'gcr.io/cybernetic-muse-484613-r5/reely-frontend'
+      - '.'
+images:
+  - 'gcr.io/cybernetic-muse-484613-r5/reely-frontend'

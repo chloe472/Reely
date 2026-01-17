@@ -24,7 +24,7 @@ interface LocationListProps {
   onGuess?: (locationId: string) => void;
 }
 
-function LocationList({ locations, gameMode, onCopyAddress, onOpenInMaps, onGuess }: LocationListProps) {
+function LocationList({ locations, gameMode, onOpenInMaps, onGuess }: LocationListProps) {
   return (
     <div className="location-list">
       <table className="list-table">
