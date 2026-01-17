@@ -39,9 +39,12 @@ function MapGuess() {
   const [hasGuessed, setHasGuessed] = useState(false);
   const [result, setResult] = useState<GuessResult | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [streetView, setStreetView] = useState<google.maps.StreetViewPanorama | null>(null);
   const [userMarker, setUserMarker] = useState<google.maps.Marker | null>(null);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [isImageExpanded, setIsImageExpanded] = useState(false);
 
-  // Initialize Google Map
+  // Initialize Google Maps and Street View
   useEffect(() => {
     if (!currentLocation) {
       navigate('/results');
@@ -53,20 +56,38 @@ function MapGuess() {
       script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}`;
       script.async = true;
       script.defer = true;
-      script.onload = initMap;
+      script.onload = initMapsAndStreetView;
       document.head.appendChild(script);
     };
 
-    const initMap = () => {
-      const mapElement = document.getElementById('map');
+    const initMapsAndStreetView = () => {
+      // Initialize Street View
+      const streetViewElement = document.getElementById('street-view');
+      if (streetViewElement) {
+        const panorama = new google.maps.StreetViewPanorama(streetViewElement, {
+          position: currentLocation.coordinates,
+          pov: { heading: 0, pitch: 0 },
+          zoom: 1,
+          addressControl: false,
+          linksControl: true,
+          panControl: true,
+          enableCloseButton: false,
+          fullscreenControl: false,
+        });
+        setStreetView(panorama);
+      }
+
+      // Initialize Map
+      const mapElement = document.getElementById('mini-map');
       if (!mapElement) return;
 
       const googleMap = new google.maps.Map(mapElement, {
-        center: { lat: 20, lng: 0 }, // Center of world
+        center: { lat: 20, lng: 0 },
         zoom: 2,
-        mapTypeControl: true,
+        mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
+        zoomControl: true,
       });
 
       setMap(googleMap);
@@ -100,7 +121,7 @@ function MapGuess() {
 
     // Check if Google Maps is already loaded
     if (typeof google !== 'undefined' && google.maps) {
-      initMap();
+      initMapsAndStreetView();
     } else {
       loadGoogleMaps();
     }
@@ -237,6 +258,7 @@ function MapGuess() {
 
   return (
     <div className="map-guess">
+      {/* Header */}
       <div className="map-guess-header">
         <div className="round-info">
           <h2>Round {currentIndex + 1} of {allLocations.length}</h2>
@@ -246,81 +268,80 @@ function MapGuess() {
         </button>
       </div>
 
-      <div className="map-guess-container">
-        <div className="image-preview">
-          <img src={currentLocation.imageUrl} alt="Location to guess" />
-          <div className="image-label">Guess this location!</div>
-        </div>
+      {/* Main Street View */}
+      <div className="street-view-container">
+        <div id="street-view" className="street-view-canvas"></div>
+      </div>
 
-        <div className="map-section">
-          <div id="map" className="map-canvas"></div>
-          
-          <div className="map-controls">
-            {!hasGuessed ? (
-              <>
-                <div className="instruction">
-                  {userGuess ? 'Pin placed! Click Guess to submit.' : 'Click anywhere on the map to place your pin'}
-                </div>
-                <button 
-                  className="guess-button"
-                  onClick={handleGuess}
-                  disabled={!userGuess}
-                >
-                  Guess
-                </button>
-              </>
-            ) : (
-              <div className="result-panel">
-                <h3>{result?.accuracy}</h3>
-                <div className="result-details">
-                  <div className="result-item">
-                    <span className="result-label">Distance:</span>
-                    <span className="result-value">{result?.distance.toFixed(2)} km</span>
-                  </div>
-                  <div className="result-item">
-                    <span className="result-label">Points:</span>
-                    <span className="result-value points">{result?.points}</span>
-                  </div>
-                  <div className="result-item">
-                    <span className="result-label">Location:</span>
-                    <span className="result-value">{currentLocation.name}</span>
-                  </div>
-                </div>
-                <div className="result-actions">
-                  {currentIndex < allLocations.length - 1 ? (
-                    <button className="next-button" onClick={handleNextRound}>
-                      Next Round →
-                    </button>
-                  ) : (
-                    <button className="finish-button" onClick={handleBackToResults}>
-                      View All Results
-                    </button>
-                  )}
-                  <button 
-                    className="open-maps-button"
-                    onClick={() => {
-                      // Use location name if available, otherwise fall back to coordinates
-                      const query = currentLocation.name || `${currentLocation.coordinates.lat},${currentLocation.coordinates.lng}`;
-                      window.open(
-                        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
-                        '_blank'
-                      );
-                    }}
-                  >
-                    Open in Google Maps
-                  </button>
-                  {currentLocation.streetViewUrl && (
-                    <button 
-                      className="street-view-button"
-                      onClick={() => window.open(currentLocation.streetViewUrl, '_blank')}
-                    >
-                      View Street View
-                    </button>
-                  )}
-                </div>
+      {/* Minimized Screenshot - Top Left */}
+      <div className={`mini-screenshot ${isImageExpanded ? 'expanded' : ''}`}>
+        <div className="mini-header">
+          <span className="mini-title">Location Clue</span>
+          <button 
+            className="expand-button"
+            onClick={() => setIsImageExpanded(!isImageExpanded)}
+            title={isImageExpanded ? 'Minimize' : 'Expand'}
+          >
+            {isImageExpanded ? '−' : '+'}
+          </button>
+        </div>
+        <img src={currentLocation.imageUrl} alt="Location clue" />
+      </div>
+
+      {/* Minimized World Map - Bottom Right */}
+      <div className={`mini-map-container ${isMapExpanded ? 'expanded' : ''}`}>
+        <div className="mini-header">
+          <span className="mini-title">Make Your Guess</span>
+          <button 
+            className="expand-button"
+            onClick={() => setIsMapExpanded(!isMapExpanded)}
+            title={isMapExpanded ? 'Minimize' : 'Expand'}
+          >
+            {isMapExpanded ? '−' : '+'}
+          </button>
+        </div>
+        <div id="mini-map" className="mini-map-canvas"></div>
+        
+        {/* Map Controls */}
+        <div className="mini-map-controls">
+          {!hasGuessed ? (
+            <>
+              <div className="instruction-text">
+                {userGuess ? 'Pin placed!' : 'Click map to place pin'}
               </div>
-            )}
-          </div>
+              <button 
+                className="guess-button-mini"
+                onClick={handleGuess}
+                disabled={!userGuess}
+              >
+                {userGuess ? 'Guess' : 'Place Pin First'}
+              </button>
+            </>
+          ) : (
+            <div className="result-panel-mini">
+              <div className="result-header-mini">
+                <h3>{result?.accuracy}</h3>
+                <div className="result-points">{result?.points} pts</div>
+              </div>
+              <div className="result-distance">
+                Distance: {result?.distance.toFixed(2)} km
+              </div>
+              <div className="result-location">
+                Location: {currentLocation.name}
+              </div>
+              <div className="result-actions-mini">
+                {currentIndex < allLocations.length - 1 ? (
+                  <button className="next-button-mini" onClick={handleNextRound}>
+                    Next Round →
+                  </button>
+                ) : (
+                  <button className="finish-button-mini" onClick={handleBackToResults}>
+                    View Results
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
