@@ -5,6 +5,7 @@ import multer from 'multer';
 import dotenv from 'dotenv';
 
 import uploadRoutes, { uploadsDir } from './routes/uploads.js';
+import pageRoutes from './routes/pages.js';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 
 // Routes
+app.use(pageRoutes);
 app.use(uploadRoutes);
 
 // Error handling middleware
@@ -55,8 +57,11 @@ connectDB().then(() => {
 ║   Database: MongoDB Atlas                    ║
 ║                                              ║
 ║   Endpoints:                                 ║
-║   POST /upload     - Upload screenshot       ║
-║   GET  /history    - Get all uploads         ║
+║   GET  /          - Homepage                 ║
+║   GET  /privacy   - Privacy Policy           ║
+║   GET  /terms     - Terms of Service         ║
+║   POST /upload    - Upload screenshot        ║
+║   GET  /history   - Get all uploads          ║
 ║   GET  /upload/:id - Get single upload       ║
 ║   DEL  /upload/:id - Delete upload           ║
 ║                                              ║
