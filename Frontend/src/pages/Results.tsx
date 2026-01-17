@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import ResultCard from '../components/ResultCard';
 import LocationCard from '../components/LocationCard';
@@ -29,8 +29,8 @@ interface ResultsProps {
 
 function Results({ locations = [] }: ResultsProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [gameMode, setGameMode] = useState(true); // Auto-enabled on load
-  const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card'); // Card or List view
 
   // Get locations from navigation state (passed from Dashboard)
@@ -43,10 +43,17 @@ function Results({ locations = [] }: ResultsProps) {
 
   const handleCardClick = (locationId: string) => {
     if (gameMode) {
-      setSelectedCard(locationId);
-      // TODO: Navigate to map guessing interface
-      console.log('Opening map for location:', locationId);
-      alert(`Opening map to guess location ${locationId}. Map interface coming next!`);
+      const currentIndex = displayLocations.findIndex(loc => loc.id === locationId);
+      const currentLocation = displayLocations[currentIndex];
+      
+      // Navigate to map guessing page
+      navigate('/map-guess', {
+        state: {
+          location: currentLocation,
+          allLocations: displayLocations,
+          currentIndex: currentIndex,
+        }
+      });
     }
   };
 
@@ -117,7 +124,7 @@ function Results({ locations = [] }: ResultsProps) {
                   key={location.id}
                   location={location}
                   gameMode={gameMode}
-                  isSelected={selectedCard === location.id}
+                  isSelected={false}
                   onClick={() => handleCardClick(location.id)}
                 />
               ))
