@@ -41,7 +41,7 @@ async function extractFrames(videoPath, outputDir, fps = 0.2) {
           .sort()
           .map(file => path.join(outputDir, file));
         
-        console.log(`✓ Extracted ${files.length} frames from video`);
+        console.log(` Extracted ${files.length} frames from video`);
         resolve(files);
       })
       .on('error', (err) => {
@@ -120,7 +120,7 @@ function filterUniqueLocations(locations, threshold = 0.7) {
     }
   }
 
-  console.log(`✓ Filtered ${locations.length} locations to ${uniqueLocations.length} unique locations`);
+  console.log(` Filtered ${locations.length} locations to ${uniqueLocations.length} unique locations`);
   return uniqueLocations;
 }
 
@@ -137,7 +137,7 @@ export async function processVideo(videoPath, options = {}) {
     similarityThreshold = 0.7
   } = options;
 
-  console.log(`\n🎥 Processing video: ${path.basename(videoPath)}`);
+  console.log(`\n Processing video: ${path.basename(videoPath)}`);
   console.log(`   - FPS: ${fps} (1 frame every ${Math.round(1/fps)} seconds)`);
   console.log(`   - Max frames: ${maxFrames}`);
 
@@ -147,19 +147,19 @@ export async function processVideo(videoPath, options = {}) {
 
   try {
     // Step 1: Extract frames from video
-    console.log('📸 Extracting frames...');
+    console.log(' Extracting frames...');
     let framePaths = await extractFrames(videoPath, framesDir, fps);
 
     // Limit number of frames to analyze
     if (framePaths.length > maxFrames) {
-      console.log(`⚠️  Limiting analysis to ${maxFrames} frames (extracted ${framePaths.length})`);
+      console.log(`️  Limiting analysis to ${maxFrames} frames (extracted ${framePaths.length})`);
       // Sample frames evenly across the video
       const step = Math.floor(framePaths.length / maxFrames);
       framePaths = framePaths.filter((_, index) => index % step === 0).slice(0, maxFrames);
     }
 
     // Step 2: Analyze each frame with Gemini
-    console.log(`🔍 Analyzing ${framePaths.length} frames...`);
+    console.log(` Analyzing ${framePaths.length} frames...`);
     const analysisResults = [];
     let successCount = 0;
     let failCount = 0;
@@ -186,10 +186,10 @@ export async function processVideo(videoPath, options = {}) {
             timestamp: (i / fps).toFixed(1) + 's'
           });
           successCount++;
-          console.log(`      ✓ Found: ${analysis.location_name} (${analysis.confidence} confidence)`);
+          console.log(`       Found: ${analysis.location_name} (${analysis.confidence} confidence)`);
         } else {
           failCount++;
-          console.log(`      ✗ No valid location detected`);
+          console.log(`       No valid location detected`);
         }
 
         // Add delay between requests to avoid rate limiting (1 request per 4 seconds = 15 RPM)
@@ -198,11 +198,11 @@ export async function processVideo(videoPath, options = {}) {
         }
       } catch (error) {
         failCount++;
-        console.error(`      ✗ Error analyzing frame: ${error.message}`);
+        console.error(`       Error analyzing frame: ${error.message}`);
       }
     }
 
-    console.log(`\n📊 Analysis complete:`);
+    console.log(`\n Analysis complete:`);
     console.log(`   - Success: ${successCount} frames`);
     console.log(`   - Failed: ${failCount} frames`);
 
@@ -210,7 +210,7 @@ export async function processVideo(videoPath, options = {}) {
     const uniqueLocations = filterUniqueLocations(analysisResults, similarityThreshold);
 
     // Step 4: Clean up frame files
-    console.log(`🧹 Cleaning up temporary files...`);
+    console.log(` Cleaning up temporary files...`);
     framePaths.forEach(framePath => {
       try {
         fs.unlinkSync(framePath);

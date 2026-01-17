@@ -8,14 +8,14 @@ set -e
 PROJECT_ID="${GCP_PROJECT_ID:-your-gcp-project-id}"
 
 echo "=================================="
-echo "🔐 Setting up GCP Secrets"
+echo " Setting up GCP Secrets"
 echo "=================================="
 echo "Project: ${PROJECT_ID}"
 echo ""
 
 # Check if gcloud is installed
 if ! command -v gcloud &> /dev/null; then
-    echo "❌ gcloud CLI not found. Please install it first"
+    echo " gcloud CLI not found. Please install it first"
     exit 1
 fi
 
@@ -23,7 +23,7 @@ fi
 gcloud config set project ${PROJECT_ID}
 
 # Enable Secret Manager API
-echo "🔧 Enabling Secret Manager API..."
+echo " Enabling Secret Manager API..."
 gcloud services enable secretmanager.googleapis.com
 
 echo ""
@@ -36,7 +36,7 @@ echo ""
 if [ ! -z "$GEMINI_API_KEY" ]; then
     echo -n "$GEMINI_API_KEY" | gcloud secrets create GEMINI_API_KEY --data-file=- 2>/dev/null || \
     echo -n "$GEMINI_API_KEY" | gcloud secrets versions add GEMINI_API_KEY --data-file=-
-    echo "✅ GEMINI_API_KEY created/updated"
+    echo " GEMINI_API_KEY created/updated"
 fi
 
 # MONGODB_URI
@@ -46,7 +46,7 @@ echo ""
 if [ ! -z "$MONGODB_URI" ]; then
     echo -n "$MONGODB_URI" | gcloud secrets create MONGODB_URI --data-file=- 2>/dev/null || \
     echo -n "$MONGODB_URI" | gcloud secrets versions add MONGODB_URI --data-file=-
-    echo "✅ MONGODB_URI created/updated"
+    echo " MONGODB_URI created/updated"
 fi
 
 # SUPABASE_URL
@@ -56,7 +56,7 @@ echo ""
 if [ ! -z "$SUPABASE_URL" ]; then
     echo -n "$SUPABASE_URL" | gcloud secrets create SUPABASE_URL --data-file=- 2>/dev/null || \
     echo -n "$SUPABASE_URL" | gcloud secrets versions add SUPABASE_URL --data-file=-
-    echo "✅ SUPABASE_URL created/updated"
+    echo " SUPABASE_URL created/updated"
 fi
 
 # SUPABASE_ANON_KEY
@@ -66,12 +66,12 @@ echo ""
 if [ ! -z "$SUPABASE_ANON_KEY" ]; then
     echo -n "$SUPABASE_ANON_KEY" | gcloud secrets create SUPABASE_ANON_KEY --data-file=- 2>/dev/null || \
     echo -n "$SUPABASE_ANON_KEY" | gcloud secrets versions add SUPABASE_ANON_KEY --data-file=-
-    echo "✅ SUPABASE_ANON_KEY created/updated"
+    echo " SUPABASE_ANON_KEY created/updated"
 fi
 
 echo ""
 echo "=================================="
-echo "✅ All secrets created!"
+echo " All secrets created!"
 echo "=================================="
 echo ""
 echo "To verify, run:"

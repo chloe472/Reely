@@ -545,7 +545,7 @@ router.get('/leaderboard', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100; // Get more users initially
 
-    console.log('🏆 Fetching leaderboard...');
+    console.log(' Fetching leaderboard...');
 
     // Fetch all user profiles from Supabase public.profiles table
     const { data: profiles, error: supabaseError } = await supabase
@@ -553,7 +553,7 @@ router.get('/leaderboard', async (req, res) => {
       .select('id, email, full_name, avatar_url')
       .order('created_at', { ascending: false });
     
-    console.log('📊 Supabase profiles response:');
+    console.log(' Supabase profiles response:');
     console.log('  - Error:', supabaseError);
     console.log('  - Profiles count:', profiles?.length || 0);
     if (profiles && profiles.length > 0) {
@@ -561,7 +561,7 @@ router.get('/leaderboard', async (req, res) => {
     }
     
     if (supabaseError) {
-      console.error('⚠️ Supabase profiles error:', supabaseError);
+      console.error('️ Supabase profiles error:', supabaseError);
     }
 
     // Aggregate game stats from MongoDB
@@ -646,7 +646,7 @@ router.get('/leaderboard', async (req, res) => {
     const requestedLimit = parseInt(req.query.limit) || 10;
     leaderboard = leaderboard.slice(0, requestedLimit);
 
-    console.log('✅ Leaderboard generated:');
+    console.log(' Leaderboard generated:');
     console.log(`  - Total users: ${leaderboard.length}`);
     if (leaderboard.length > 0) {
       console.log('  - Sample entry:', JSON.stringify(leaderboard[0], null, 2));

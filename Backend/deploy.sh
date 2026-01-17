@@ -12,7 +12,7 @@ SERVICE_NAME="reely-backend"
 IMAGE_NAME="gcr.io/${PROJECT_ID}/${SERVICE_NAME}"
 
 echo "=================================="
-echo "🚀 Deploying Reely Backend to GCP"
+echo " Deploying Reely Backend to GCP"
 echo "=================================="
 echo "Project: ${PROJECT_ID}"
 echo "Region: ${REGION}"
@@ -21,33 +21,33 @@ echo ""
 
 # Check if gcloud is installed
 if ! command -v gcloud &> /dev/null; then
-    echo "❌ gcloud CLI not found. Please install it first:"
+    echo " gcloud CLI not found. Please install it first:"
     echo "https://cloud.google.com/sdk/docs/install"
     exit 1
 fi
 
 # Check if logged in
 if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" &> /dev/null; then
-    echo "❌ Not logged in to gcloud. Please run: gcloud auth login"
+    echo " Not logged in to gcloud. Please run: gcloud auth login"
     exit 1
 fi
 
 # Set project
-echo "📋 Setting GCP project..."
+echo " Setting GCP project..."
 gcloud config set project ${PROJECT_ID}
 
 # Enable required APIs
-echo "🔧 Enabling required GCP APIs..."
+echo " Enabling required GCP APIs..."
 gcloud services enable cloudbuild.googleapis.com
 gcloud services enable run.googleapis.com
 gcloud services enable containerregistry.googleapis.com
 
 # Build Docker image
-echo "🔨 Building Docker image..."
+echo " Building Docker image..."
 gcloud builds submit --tag ${IMAGE_NAME} .
 
 # Deploy to Cloud Run
-echo "🚢 Deploying to Cloud Run..."
+echo " Deploying to Cloud Run..."
 gcloud run deploy ${SERVICE_NAME} \
   --image ${IMAGE_NAME} \
   --platform managed \
@@ -67,11 +67,11 @@ SERVICE_URL=$(gcloud run services describe ${SERVICE_NAME} --platform managed --
 
 echo ""
 echo "=================================="
-echo "✅ Backend Deployment Complete!"
+echo " Backend Deployment Complete!"
 echo "=================================="
 echo "Service URL: ${SERVICE_URL}"
 echo ""
-echo "⚠️  IMPORTANT: Set these secrets in GCP Secret Manager:"
+echo "️  IMPORTANT: Set these secrets in GCP Secret Manager:"
 echo "  - GEMINI_API_KEY"
 echo "  - MONGODB_URI"
 echo "  - SUPABASE_URL"

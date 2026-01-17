@@ -10,10 +10,10 @@ function initializeAI() {
     ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY
     });
-    console.log('✓ Gemini API initialized');
-    console.log('✓ API Key loaded:', process.env.GEMINI_API_KEY ? 'YES' : 'NO');
+    console.log(' Gemini API initialized');
+    console.log(' API Key loaded:', process.env.GEMINI_API_KEY ? 'YES' : 'NO');
     if (process.env.GEMINI_API_KEY) {
-      console.log('✓ Key starts with:', process.env.GEMINI_API_KEY.substring(0, 15) + '...');
+      console.log(' Key starts with:', process.env.GEMINI_API_KEY.substring(0, 15) + '...');
     }
   }
   return ai;
