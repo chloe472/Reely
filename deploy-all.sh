@@ -7,14 +7,14 @@ set -e
 
 echo "╔══════════════════════════════════════════════╗"
 echo "║                                              ║"
-echo "║   🚀 Reely - GCP Cloud Run Deployment       ║"
+echo "║    Reely - GCP Cloud Run Deployment       ║"
 echo "║                                              ║"
 echo "╚══════════════════════════════════════════════╝"
 echo ""
 
 # Check if GCP_PROJECT_ID is set
 if [ -z "$GCP_PROJECT_ID" ]; then
-    echo "❌ GCP_PROJECT_ID environment variable not set"
+    echo " GCP_PROJECT_ID environment variable not set"
     echo ""
     echo "Please set it with:"
     echo "  export GCP_PROJECT_ID='your-project-id'"
@@ -23,11 +23,11 @@ fi
 
 # Check if GCP_REGION is set
 if [ -z "$GCP_REGION" ]; then
-    echo "⚠️  GCP_REGION not set, using default: us-central1"
+    echo "️  GCP_REGION not set, using default: us-central1"
     export GCP_REGION="us-central1"
 fi
 
-echo "📋 Configuration:"
+echo " Configuration:"
 echo "   Project ID: $GCP_PROJECT_ID"
 echo "   Region: $GCP_REGION"
 echo ""
@@ -54,12 +54,12 @@ cd Backend
 BACKEND_URL=$(gcloud run services describe reely-backend --platform managed --region $GCP_REGION --format 'value(status.url)')
 
 if [ -z "$BACKEND_URL" ]; then
-    echo "❌ Failed to get backend URL"
+    echo " Failed to get backend URL"
     exit 1
 fi
 
 echo ""
-echo "✅ Backend deployed: $BACKEND_URL"
+echo " Backend deployed: $BACKEND_URL"
 echo ""
 
 # Wait a moment for backend to be fully ready
@@ -82,15 +82,15 @@ FRONTEND_URL=$(gcloud run services describe reely-frontend --platform managed --
 echo ""
 echo "╔══════════════════════════════════════════════╗"
 echo "║                                              ║"
-echo "║   ✅ DEPLOYMENT COMPLETE!                    ║"
+echo "║    DEPLOYMENT COMPLETE!                    ║"
 echo "║                                              ║"
 echo "╚══════════════════════════════════════════════╝"
 echo ""
-echo "🔗 Your App URLs:"
+echo " Your App URLs:"
 echo "   Frontend: $FRONTEND_URL"
 echo "   Backend:  $BACKEND_URL"
 echo ""
-echo "⚠️  NEXT STEPS:"
+echo "️  NEXT STEPS:"
 echo ""
 echo "1. Update Backend CORS:"
 echo "   - Edit Backend/server.js"

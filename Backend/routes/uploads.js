@@ -10,6 +10,7 @@ import Upload from '../models/Upload.js';
 import { analyzeScreenshot, generateMapsUrl, generateStreetViewUrl, validateCoordinates } from '../services/gemini.js';
 import { processVideo, getVideoMetadata } from '../services/videoProcessor.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { uploadToGCS, deleteFromGCS, getFileUrl, isGCSConfigured } from '../services/storage.js';
 
 dotenv.config();
 
@@ -102,6 +103,19 @@ router.post('/upload', authenticateToken, upload.single('screenshot'), async (re
           similarityThreshold: 0.7
         });
 
+        // Upload video file to GCS if configured
+        let videoUrl;
+        if (isGCSConfigured()) {
+          const videoGcsPath = `uploads/${req.file.filename}`;
+          videoUrl = await uploadToGCS(filePath, videoGcsPath);
+          // Delete local video file after upload
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        } else {
+          videoUrl = `/uploads/${req.file.filename}`;
+        }
+
         // Save each unique location to database
         const savedUploads = [];
         for (let i = 0; i < videoResult.locations.length; i++) {
@@ -119,11 +133,32 @@ router.post('/upload', authenticateToken, upload.single('screenshot'), async (re
             location.longitude
           );
 
+          // Upload frame image to GCS if configured
+          let frameFileUrl;
+          const frameFilename = location.frameFilename || req.file.filename;
+          if (isGCSConfigured() && location.framePath && fs.existsSync(location.framePath)) {
+            try {
+              const frameGcsPath = `uploads/${frameFilename}`;
+              frameFileUrl = await uploadToGCS(location.framePath, frameGcsPath);
+              // Delete local frame file after upload
+              if (fs.existsSync(location.framePath)) {
+                fs.unlinkSync(location.framePath);
+              }
+            } catch (gcsError) {
+              console.error(`Failed to upload frame to GCS: ${gcsError.message}`);
+              // Fallback to local path
+              frameFileUrl = `/uploads/${frameFilename}`;
+            }
+          } else {
+            frameFileUrl = `/uploads/${frameFilename}`;
+          }
+
           const newUpload = new Upload({
             user_id: req.user.userId,
             user_email: req.user.email,
             user_name: req.user.fullName,
-            filename: location.frameFilename || req.file.filename, // Use frame filename
+            filename: frameFilename,
+            file_url: frameFileUrl, // Store GCS URL or local path
             original_name: `${req.file.originalname} - Location ${i + 1} (${location.timestamp})`,
             location_name: location.location_name || 'Unknown Location',
             address: location.address || null,
@@ -157,7 +192,7 @@ router.post('/upload', authenticateToken, upload.single('screenshot'), async (re
         return res.json({
           type: 'video',
           filename: req.file.filename,
-          videoUrl: `/uploads/${req.file.filename}`,
+          videoUrl: videoUrl, // Use GCS URL or local path
           metadata: {
             duration: metadata.duration,
             format: metadata.format,
@@ -170,7 +205,7 @@ router.post('/upload', authenticateToken, upload.single('screenshot'), async (re
           },
           locations: savedUploads.map((upload, index) => ({
             id: upload._id,
-            imageUrl: `/uploads/${upload.filename}`, // Add imageUrl for frame screenshot
+            imageUrl: upload.file_url || `/uploads/${upload.filename}`, // Use stored file_url
             coordinates: {
               lat: upload.latitude,
               lng: upload.longitude
@@ -209,6 +244,7 @@ router.post('/upload', authenticateToken, upload.single('screenshot'), async (re
 
     // Handle image files (existing logic)
     const imagePath = filePath;
+    const filename = req.file.filename;
 
     // Analyze with Gemini Vision API
     const analysis = await analyzeScreenshot(imagePath);
@@ -274,12 +310,27 @@ router.post('/upload', authenticateToken, upload.single('screenshot'), async (re
       analysis.longitude
     );
 
+    // Upload image to GCS if configured
+    let fileUrl;
+    if (isGCSConfigured()) {
+      const gcsPath = `uploads/${filename}`;
+      fileUrl = await uploadToGCS(imagePath, gcsPath);
+      // Delete local file after upload to save space
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    } else {
+      // Local development - use local path
+      fileUrl = `/uploads/${filename}`;
+    }
+
     // Save to MongoDB with comprehensive data
     const newUpload = new Upload({
       user_id: req.user.userId,
       user_email: req.user.email, // Save email for leaderboard
       user_name: req.user.fullName, // Save full name from Google Auth
-      filename: req.file.filename,
+      filename: filename,
+      file_url: fileUrl, // Store full GCS URL or local path
       original_name: req.file.originalname,
       location_name: analysis.location_name || 'Unknown Location',
       address: analysis.address || null,
@@ -314,8 +365,8 @@ router.post('/upload', authenticateToken, upload.single('screenshot'), async (re
     res.json({
       type: 'image',
       id: newUpload._id,
-      filename: req.file.filename,
-      imageUrl: `/uploads/${req.file.filename}`,
+      filename: filename,
+      imageUrl: fileUrl, // Use stored file_url (GCS URL or local path)
       
       // Return coordinates for frontend use
       coordinates: {
@@ -464,7 +515,7 @@ router.get('/history', authenticateToken, async (req, res) => {
       category: upload.category,
       google_maps_url: upload.google_maps_url,
       created_at: upload.created_at,
-      imageUrl: `/uploads/${upload.filename}`,
+      imageUrl: upload.file_url || getFileUrl(upload.filename), // Use file_url if available, otherwise generate
       analysis: upload.raw_response
     }));
 
@@ -499,7 +550,7 @@ router.get('/upload/:id', async (req, res) => {
       category: uploadDoc.category,
       google_maps_url: uploadDoc.google_maps_url,
       created_at: uploadDoc.created_at,
-      imageUrl: `/uploads/${uploadDoc.filename}`,
+      imageUrl: uploadDoc.file_url || getFileUrl(uploadDoc.filename), // Use file_url if available
       analysis: uploadDoc.raw_response
     });
   } catch (error) {
@@ -517,10 +568,16 @@ router.delete('/upload/:id', async (req, res) => {
       return res.status(404).json({ error: 'Upload not found' });
     }
 
-    // Delete file
-    const filePath = join(uploadsDir, uploadDoc.filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // Delete file from GCS or local filesystem
+    if (uploadDoc.file_url && uploadDoc.file_url.startsWith('https://storage.googleapis.com/')) {
+      // Delete from GCS
+      await deleteFromGCS(uploadDoc.file_url);
+    } else {
+      // Delete from local filesystem
+      const filePath = join(uploadsDir, uploadDoc.filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
     }
 
     // Delete from database
@@ -545,7 +602,7 @@ router.get('/leaderboard', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100; // Get more users initially
 
-    console.log('🏆 Fetching leaderboard...');
+    console.log(' Fetching leaderboard...');
 
     // Fetch all user profiles from Supabase public.profiles table
     const { data: profiles, error: supabaseError } = await supabase
@@ -553,7 +610,7 @@ router.get('/leaderboard', async (req, res) => {
       .select('id, email, full_name, avatar_url')
       .order('created_at', { ascending: false });
     
-    console.log('📊 Supabase profiles response:');
+    console.log(' Supabase profiles response:');
     console.log('  - Error:', supabaseError);
     console.log('  - Profiles count:', profiles?.length || 0);
     if (profiles && profiles.length > 0) {
@@ -561,7 +618,7 @@ router.get('/leaderboard', async (req, res) => {
     }
     
     if (supabaseError) {
-      console.error('⚠️ Supabase profiles error:', supabaseError);
+      console.error('️ Supabase profiles error:', supabaseError);
     }
 
     // Aggregate game stats from MongoDB
@@ -646,7 +703,7 @@ router.get('/leaderboard', async (req, res) => {
     const requestedLimit = parseInt(req.query.limit) || 10;
     leaderboard = leaderboard.slice(0, requestedLimit);
 
-    console.log('✅ Leaderboard generated:');
+    console.log(' Leaderboard generated:');
     console.log(`  - Total users: ${leaderboard.length}`);
     if (leaderboard.length > 0) {
       console.log('  - Sample entry:', JSON.stringify(leaderboard[0], null, 2));

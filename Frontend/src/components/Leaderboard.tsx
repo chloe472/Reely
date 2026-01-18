@@ -30,8 +30,8 @@ function Leaderboard({ limit = 10 }: LeaderboardProps) {
     try {
       setLoading(true);
       const data = await uploadAPI.getLeaderboard(limit);
-      console.log('🏆 Leaderboard data received:', data.leaderboard);
-      console.log('📊 Avatar URLs:', data.leaderboard.map((e: LeaderboardEntry) => ({ 
+      console.log(' Leaderboard data received:', data.leaderboard);
+      console.log(' Avatar URLs:', data.leaderboard.map((e: LeaderboardEntry) => ({ 
         name: e.displayName, 
         avatar: e.avatarUrl 
       })));
@@ -110,9 +110,9 @@ function Leaderboard({ limit = 10 }: LeaderboardProps) {
                     src={entry.avatarUrl} 
                     alt={entry.displayName}
                     className="player-avatar"
-                    onLoad={() => console.log(`✅ Avatar loaded for ${entry.displayName}`)}
+                    onLoad={() => console.log(` Avatar loaded for ${entry.displayName}`)}
                     onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                      console.error(`❌ Avatar failed for ${entry.displayName}:`, entry.avatarUrl);
+                      console.error(` Avatar failed for ${entry.displayName}:`, entry.avatarUrl);
                       // Show placeholder instead
                       const target = e.currentTarget;
                       target.style.display = 'none';
