@@ -41,6 +41,7 @@ echo " Enabling required GCP APIs..."
 gcloud services enable cloudbuild.googleapis.com
 gcloud services enable run.googleapis.com
 gcloud services enable containerregistry.googleapis.com
+gcloud services enable storage.googleapis.com
 
 # Build Docker image
 echo " Building Docker image..."
@@ -60,7 +61,7 @@ gcloud run deploy ${SERVICE_NAME} \
   --min-instances 0 \
   --port 8080 \
   --set-env-vars "NODE_ENV=production" \
-  --update-secrets "GEMINI_API_KEY=GEMINI_API_KEY:latest,MONGODB_URI=MONGODB_URI:latest,SUPABASE_URL=SUPABASE_URL:latest,SUPABASE_ANON_KEY=SUPABASE_ANON_KEY:latest"
+  --update-secrets "GEMINI_API_KEY=GEMINI_API_KEY:latest,MONGODB_URI=MONGODB_URI:latest,SUPABASE_URL=SUPABASE_URL:latest,SUPABASE_ANON_KEY=SUPABASE_ANON_KEY:latest,GCS_BUCKET_NAME=GCS_BUCKET_NAME:latest,GCP_PROJECT_ID=GCP_PROJECT_ID:latest"
 
 # Get service URL
 SERVICE_URL=$(gcloud run services describe ${SERVICE_NAME} --platform managed --region ${REGION} --format 'value(status.url)')
@@ -76,9 +77,19 @@ echo "  - GEMINI_API_KEY"
 echo "  - MONGODB_URI"
 echo "  - SUPABASE_URL"
 echo "  - SUPABASE_ANON_KEY"
+echo "  - GCS_BUCKET_NAME"
+echo "  - GCP_PROJECT_ID"
 echo ""
 echo "To create secrets, run:"
 echo "  echo -n 'your-api-key' | gcloud secrets create GEMINI_API_KEY --data-file=-"
+echo "  echo -n 'your-bucket-name' | gcloud secrets create GCS_BUCKET_NAME --data-file=-"
+echo "  echo -n 'your-project-id' | gcloud secrets create GCP_PROJECT_ID --data-file=-"
+echo ""
+echo "️  IMPORTANT: Grant Cloud Run access to GCS:"
+echo "  PROJECT_NUMBER=\$(gcloud projects describe \$GCP_PROJECT_ID --format='value(projectNumber)')"
+echo "  gcloud projects add-iam-policy-binding \$GCP_PROJECT_ID \\"
+echo "    --member=\"serviceAccount:\${PROJECT_NUMBER}-compute@developer.gserviceaccount.com\" \\"
+echo "    --role=\"roles/storage.admin\""
 echo ""
 echo "Update your frontend environment variable:"
 echo "  VITE_API_URL=${SERVICE_URL}"

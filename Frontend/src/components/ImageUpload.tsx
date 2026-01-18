@@ -40,7 +40,7 @@ function ImageUpload({ images, onAddImages, onRemoveImage }: ImageUploadProps) {
               onClick={() => onRemoveImage(image.id)}
               aria-label="Remove file"
             >
-              
+              ×
             </button>
           </div>
         ))}

@@ -8,6 +8,7 @@ const uploadSchema = new mongoose.Schema({
   user_email: String, // User's email for leaderboard display
   user_name: String, // User's display name for leaderboard
   filename: String,
+  file_url: String, // Full URL to file (GCS URL in production, local path in dev)
   original_name: String,
   location_name: String,
   address: String,
