@@ -34,6 +34,7 @@ function SearchHistory() {
   const [error, setError] = useState('');
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [activeSearchId, setActiveSearchId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -118,6 +119,23 @@ function SearchHistory() {
     }
   };
 
+  const handleDeleteSearch = async (searchId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this search?')) {
+      return;
+    }
+    
+    try {
+      await uploadAPI.deleteUpload(searchId);
+      setSearchHistory(searchHistory.filter(s => s.id !== searchId));
+      setOpenMenuId(null);
+      console.log('Search deleted successfully');
+    } catch (err) {
+      console.error('Failed to delete search:', err);
+      setError('Failed to delete search. Please try again.');
+    }
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="search-history">
@@ -175,6 +193,31 @@ function SearchHistory() {
                         <path fill="white" d="M8 5v14l11-7z"/>
                       </svg>
                     </div>
+                  </div>
+                  
+                  {/* Kebab Menu */}
+                  <div className="kebab-menu-container">
+                    <button 
+                      className="kebab-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(openMenuId === search.id ? null : search.id);
+                      }}
+                      title="More options"
+                    >
+                      ⋮
+                    </button>
+                    
+                    {openMenuId === search.id && (
+                      <div className="kebab-dropdown">
+                        <button 
+                          className="kebab-option delete"
+                          onClick={(e) => handleDeleteSearch(search.id, e)}
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 

@@ -1,7 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { uploadAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './MapGuess.css';
+
+// CORS proxy function for Google images
+const getCorsProxiedUrl = (url: string): string => {
+  if (!url) return '';
+  if (url.includes('lh3.googleusercontent.com') || url.includes('googleapis.com')) {
+    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
 
 interface Location {
   id: string;
@@ -30,6 +40,7 @@ interface GuessResult {
 function MapGuess() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const currentLocation: Location | undefined = location.state?.location;
   const allLocations: Location[] = location.state?.allLocations || [];
@@ -38,10 +49,13 @@ function MapGuess() {
   const [userGuess, setUserGuess] = useState<{ lat: number; lng: number } | null>(null);
   const [hasGuessed, setHasGuessed] = useState(false);
   const [result, setResult] = useState<GuessResult | null>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [userMarker, setUserMarker] = useState<google.maps.Marker | null>(null);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
+  const [crosshairPos, setCrosshairPos] = useState<{ x: number; y: number } | null>(null);
+  
+  // Use refs to maintain map and marker instances without triggering re-renders
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const userMarkerRef = useRef<google.maps.Marker | null>(null);
 
   // Initialize Google Maps and Street View
   useEffect(() => {
@@ -87,7 +101,23 @@ function MapGuess() {
         fullscreenControl: false,
       });
 
-      setMap(googleMap);
+      // Store map in ref instead of state to prevent re-renders
+      mapRef.current = googleMap;
+
+      // Add mouse move listener for crosshair
+      mapElement.addEventListener('mousemove', (e: MouseEvent) => {
+        if (!hasGuessed && mapElement) {
+          const rect = mapElement.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          setCrosshairPos({ x, y });
+        }
+      });
+
+      // Remove crosshair when mouse leaves map
+      mapElement.addEventListener('mouseleave', () => {
+        setCrosshairPos(null);
+      });
 
       // Add click listener to place pin
       googleMap.addListener('click', (e: google.maps.MapMouseEvent) => {
@@ -97,21 +127,104 @@ function MapGuess() {
           setUserGuess({ lat: clickedLat, lng: clickedLng });
 
           // Remove old marker if exists
-          if (userMarker) {
-            userMarker.setMap(null);
+          if (userMarkerRef.current) {
+            userMarkerRef.current.setMap(null);
           }
 
-          // Add new marker
-          const newMarker = new google.maps.Marker({
-            position: { lat: clickedLat, lng: clickedLng },
-            map: googleMap,
-            title: 'Your Guess',
-            icon: {
-              url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-            },
-          });
+          // Get user's profile picture from Supabase auth metadata
+          const userImageUrl = user?.user_metadata?.avatar_url || 
+                              user?.user_metadata?.picture ||
+                              'https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff';
+          
+          // Use CORS proxy for Google images
+          const proxiedImageUrl = getCorsProxiedUrl(userImageUrl);
 
-          setUserMarker(newMarker);
+          // Create a canvas-based pin with profile picture
+          const canvas = document.createElement('canvas');
+          canvas.width = 32;
+          canvas.height = 40;
+          const ctx = canvas.getContext('2d');
+          
+          if (ctx) {
+            // Draw pin shape
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.moveTo(16, 0);
+            ctx.bezierCurveTo(10.477, 0, 6, 4.477, 6, 10);
+            ctx.lineTo(6, 10);
+            ctx.bezierCurveTo(6, 18, 16, 40, 16, 40);
+            ctx.bezierCurveTo(16, 40, 26, 18, 26, 10);
+            ctx.bezierCurveTo(26, 4.477, 21.523, 0, 16, 0);
+            ctx.fill();
+            
+            // Draw pin border
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(16, 0);
+            ctx.bezierCurveTo(10.477, 0, 6, 4.477, 6, 10);
+            ctx.lineTo(6, 10);
+            ctx.bezierCurveTo(6, 18, 16, 40, 16, 40);
+            ctx.bezierCurveTo(16, 40, 26, 18, 26, 10);
+            ctx.bezierCurveTo(26, 4.477, 21.523, 0, 16, 0);
+            ctx.stroke();
+            
+            // Draw background circle for profile picture
+            ctx.fillStyle = '#e5e7eb';
+            ctx.beginPath();
+            ctx.arc(16, 12, 10, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Load and draw profile picture
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+              ctx.save();
+              ctx.beginPath();
+              ctx.arc(16, 12, 8, 0, Math.PI * 2);
+              ctx.clip();
+              ctx.drawImage(img, 8, 4, 16, 16);
+              ctx.restore();
+              
+              // Update marker with final canvas image
+              const finalDataUrl = canvas.toDataURL('image/png');
+              const newMarker = new google.maps.Marker({
+                position: { lat: clickedLat, lng: clickedLng },
+                map: googleMap,
+                title: 'Your Guess',
+                icon: {
+                  url: finalDataUrl,
+                },
+              });
+              userMarkerRef.current = newMarker;
+            };
+            img.onerror = function() {
+              // If image fails to load, use the canvas with just the default circle
+              const fallbackDataUrl = canvas.toDataURL('image/png');
+              const newMarker = new google.maps.Marker({
+                position: { lat: clickedLat, lng: clickedLng },
+                map: googleMap,
+                title: 'Your Guess',
+                icon: {
+                  url: fallbackDataUrl,
+                },
+              });
+              userMarkerRef.current = newMarker;
+              console.log('Profile picture failed to load, using fallback');
+            };
+            img.src = proxiedImageUrl;
+          } else {
+            // Fallback if canvas context is not available
+            const newMarker = new google.maps.Marker({
+              position: { lat: clickedLat, lng: clickedLng },
+              map: googleMap,
+              title: 'Your Guess',
+              icon: {
+                url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+              },
+            });
+            userMarkerRef.current = newMarker;
+          }
         }
       });
     };
@@ -122,7 +235,7 @@ function MapGuess() {
     } else {
       loadGoogleMaps();
     }
-  }, [currentLocation, navigate, hasGuessed, userMarker]);
+  }, [currentLocation, navigate, hasGuessed]);
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371; // Radius of the Earth in km
@@ -162,7 +275,7 @@ function MapGuess() {
   };
 
   const handleGuess = async () => {
-    if (!userGuess || !currentLocation || !map) return;
+    if (!userGuess || !currentLocation || !mapRef.current) return;
 
     const distance = calculateDistance(
       userGuess.lat,
@@ -194,7 +307,7 @@ function MapGuess() {
     // Show actual location marker
     new google.maps.Marker({
       position: currentLocation.coordinates,
-      map: map,
+      map: mapRef.current,
       title: 'Actual Location',
       icon: {
         url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
@@ -208,14 +321,14 @@ function MapGuess() {
       strokeColor: '#FF0000',
       strokeOpacity: 0.7,
       strokeWeight: 3,
-      map: map,
+      map: mapRef.current,
     });
 
     // Fit bounds to show both markers
     const bounds = new google.maps.LatLngBounds();
     bounds.extend(userGuess);
     bounds.extend(currentLocation.coordinates);
-    map.fitBounds(bounds);
+    mapRef.current.fitBounds(bounds);
   };
 
   const handleNextRound = () => {
@@ -297,6 +410,21 @@ function MapGuess() {
           </button>
         </div>
         <div id="mini-map" className="mini-map-canvas"></div>
+        
+        {/* Crosshair Overlay */}
+        {crosshairPos && !hasGuessed && (
+          <div
+            className="crosshair"
+            style={{
+              left: `${crosshairPos.x}px`,
+              top: `${crosshairPos.y}px`,
+            }}
+          >
+            <div className="crosshair-vertical"></div>
+            <div className="crosshair-horizontal"></div>
+            <div className="crosshair-center"></div>
+          </div>
+        )}
         
         {/* Map Controls */}
         <div className="mini-map-controls">

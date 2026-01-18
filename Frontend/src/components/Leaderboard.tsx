@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { uploadAPI } from '../services/api';
 import './Leaderboard.css';
 
+// CORS proxy function
+const getCorsProxiedUrl = (url: string): string => {
+  if (!url) return '';
+  // Use cors-anywhere proxy or check if it's a Google image that needs proxying
+  if (url.includes('lh3.googleusercontent.com') || url.includes('googleapis.com')) {
+    // Use allorigins CORS proxy which is reliable
+    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
 interface LeaderboardEntry {
   userId: string;
   displayName: string;
@@ -107,7 +118,7 @@ function Leaderboard({ limit = 10 }: LeaderboardProps) {
               {entry.avatarUrl ? (
                 <>
                   <img 
-                    src={entry.avatarUrl} 
+                    src={getCorsProxiedUrl(entry.avatarUrl)} 
                     alt={entry.displayName}
                     className="player-avatar"
                     onLoad={() => console.log(` Avatar loaded for ${entry.displayName}`)}
