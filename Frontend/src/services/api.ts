@@ -305,13 +305,22 @@ export const folderAPI = {
   },
 };
 
-// Helper to get full image URL
+// Helper to get full image URL with CORS proxy for external images
 export const getImageUrl = (imageUrl: string): string => {
   if (!imageUrl) return '';
-  if (imageUrl.startsWith('http')) {
-    return imageUrl;
+  
+  let fullUrl = imageUrl;
+  if (!imageUrl.startsWith('http')) {
+    fullUrl = `${API_BASE_URL}${imageUrl}`;
   }
-  return `${API_BASE_URL}${imageUrl}`;
+  
+  // Check if it needs CORS proxy (external URLs that are not from our API)
+  if (fullUrl.startsWith('http') && !fullUrl.includes(API_BASE_URL)) {
+    // Use CORS proxy for external images
+    return `https://api.allorigins.win/raw?url=${encodeURIComponent(fullUrl)}`;
+  }
+  
+  return fullUrl;
 };
 
 // Deprecated auth exports (kept for compatibility if needed, but should be unused)
